@@ -1,0 +1,42 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70.7763147010246 112.44035942728351" width="70.7763147010246" height="112.44035942728351">
+  <metadata></metadata>
+  <defs>
+    <style class="style-fonts"></style>
+  </defs>
+  <g stroke-linecap="square">
+    <!-- Top horizontal line -->
+    <g transform="translate(27.534231121308267 10)">
+      <path d="M0 0 H16.54" stroke="#ffffff" stroke-width="4" fill="none"></path>
+    </g>
+  </g>
+  <g stroke-linecap="round">
+    <!-- Left vertical curve -->
+    <g transform="translate(11.77069036978503 26.681700097640714)">
+      <path d="M0 0 C0.47 2.62, 1.18 10.51, 2.82 15.73 C4.47 20.95, 10.35 25.12, 9.87 31.34 C9.39 37.55, 1.89 45.6, -0.05 53 C-1.99 60.4, -1.48 71.97, -1.77 75.76" stroke="#ffffff" stroke-width="4" fill="none"></path>
+    </g>
+  </g>
+  <g stroke-linecap="round">
+    <!-- Right vertical curve -->
+    <g transform="translate(59.005624331239574 26.680107177192895)">
+      <path d="M0 0 C-0.47 2.62, -1.18 10.51, -2.82 15.73 C-4.47 20.95, -10.35 25.12, -9.87 31.34 C-9.39 37.55, -1.89 45.6, 0.05 53 C1.99 60.4, 1.48 71.97, 1.77 75.76" stroke="#ffffff" stroke-width="4" fill="none"></path>
+    </g>
+  </g>
+  <g stroke-linecap="square">
+    <!-- Middle horizontal line -->
+    <g transform="translate(23.46941672258788 57.77263998207627)">
+      <path d="M0 0 H25.27" stroke="#ffffff" stroke-width="4" fill="none"></path>
+    </g>
+  </g>
+  <g stroke-linecap="round">
+    <!-- Left outer curve -->
+    <g transform="translate(11.838867364951398 27.023859409830493)">
+      <path d="M0 0 C2.99 1.29, 14.3 1.85, 17.96 7.76 C21.62 13.67, 24.97 27.79, 21.98 35.47 C18.99 43.15, 3.67 50.79, 0.01 53.85" stroke="#ffffff" stroke-width="4" fill="none"></path>
+    </g>
+  </g>
+  <g stroke-linecap="round">
+    <!-- Right outer curve -->
+    <g transform="translate(59.03489314065939 26.922868253438537)">
+      <path d="M0 0 C-2.99 1.29, -14.3 1.85, -17.96 7.76 C-21.62 13.67, -24.97 27.79, -21.98 35.47 C-18.99 43.15, -3.67 50.79, -0.01 53.85" stroke="#ffffff" stroke-width="4" fill="none"></path>
+    </g>
+  </g>
+</svg>

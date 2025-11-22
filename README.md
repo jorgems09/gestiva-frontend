@@ -15,12 +15,27 @@ npm install
 
 ## Configuración
 
-Copia `.env.example` a `.env` y configura:
+Copia `.env.example` a `.env.local` y configura:
 
 ```env
+# Configuración de API
 VITE_API_URL=http://localhost:3000/api
 VITE_USER_EMAIL=admin@gestiva.com
+
+# Configuración de Branding (Personalización por cliente)
+VITE_COMPANY_NAME=Tu Empresa
+VITE_APP_NAME=Gestiva
+VITE_APP_SUBTITLE=Sistema ERP
+VITE_COMPANY_LOGO_PATH=/logo-empresa.svg
+VITE_COMPANY_LOGO_ALT=Logo de la empresa
 ```
+
+⚠️ **Importante**: 
+- Las variables de entorno deben comenzar con `VITE_` para estar disponibles en el cliente
+- Después de cambiar variables de entorno, reinicia el servidor de desarrollo
+- El archivo `.env.local` está en `.gitignore` y no se sube al repositorio
+
+📖 **Más información**: Ver [BRANDING.md](./BRANDING.md) para detalles sobre personalización de branding.
 
 ## Desarrollo
 

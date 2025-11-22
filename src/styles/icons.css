@@ -1,0 +1,90 @@
+/* Estilos para iconos Material Design */
+
+/* Iconos dentro de botones */
+.btn-icon {
+  font-size: 18px !important;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-sm .btn-icon {
+  font-size: 16px !important;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+}
+
+.btn-primary-large .btn-icon {
+  font-size: 20px !important;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+}
+
+/* Iconos pequeños */
+.icon-sm {
+  font-size: 18px !important;
+  width: 18px;
+  height: 18px;
+}
+
+.icon-md {
+  font-size: 24px !important;
+  width: 24px;
+  height: 24px;
+}
+
+.icon-lg {
+  font-size: 32px !important;
+  width: 32px;
+  height: 32px;
+}
+
+.icon-xl {
+  font-size: 48px !important;
+  width: 48px;
+  height: 48px;
+}
+
+/* Colores de iconos */
+.icon-primary {
+  color: var(--color-primary);
+}
+
+.icon-accent {
+  color: var(--color-accent);
+}
+
+.icon-success {
+  color: var(--color-success);
+}
+
+.icon-warning {
+  color: var(--color-warning);
+}
+
+.icon-error {
+  color: var(--color-error);
+}
+
+.icon-info {
+  color: var(--color-info);
+}
+
+.icon-text {
+  color: var(--color-text);
+}
+
+.icon-text-light {
+  color: var(--color-text-light);
+}
+
+.icon-white {
+  color: var(--color-text-on-primary);
+}
+

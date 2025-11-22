@@ -1,32 +1,130 @@
 .layout {
   display: flex;
   min-height: 100vh;
+  background-color: var(--color-bg);
 }
 
+/* Desktop Sidebar - Material Design */
 .sidebar {
-  width: 250px;
-  background-color: #2c3e50;
-  color: white;
+  width: 260px;
+  background: linear-gradient(180deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+  color: var(--color-text-on-primary);
   padding: 0;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--elevation-4);
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: var(--z-fixed);
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-header {
-  padding: 20px;
-  background-color: #34495e;
-  border-bottom: 1px solid #1a252f;
+  padding: var(--spacing-lg);
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
 }
 
-.sidebar-header h1 {
+.sidebar-branding {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* Contenedor del logo de la empresa */
+.company-logo-container {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm);
+  box-shadow: var(--elevation-2);
+  transition: transform var(--transition-fast), box-shadow var(--transition-base);
+  flex-shrink: 0;
+}
+
+.company-logo-container:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--elevation-4);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.company-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.company-logo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-on-primary);
+  opacity: 0.8;
+}
+
+.company-logo-placeholder.hidden {
+  display: none;
+}
+
+.company-logo-placeholder .material-icons {
+  font-size: 32px;
+}
+
+/* Contenedor del nombre de la empresa y aplicación */
+.app-name-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  text-align: center;
+}
+
+/* Nombre de la empresa */
+.company-name {
   margin: 0;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+/* Nombre de la aplicación */
+.app-name {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-on-primary);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+/* Subtítulo de la aplicación */
+.app-subtitle {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .sidebar-menu {
   list-style: none;
-  padding: 0;
+  padding: var(--spacing-md) 0;
   margin: 0;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .sidebar-menu li {
@@ -34,29 +132,314 @@
 }
 
 .sidebar-menu a {
-  display: block;
-  padding: 15px 20px;
-  color: #ecf0f1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: rgba(255, 255, 255, 0.87);
   text-decoration: none;
-  transition: background-color 0.3s;
+  transition: background-color var(--transition-base), border-color var(--transition-base);
   border-left: 3px solid transparent;
+  font-weight: var(--font-weight-medium);
+  font-size: 0.875rem;
+  letter-spacing: 0.0178571429em;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-menu a::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.sidebar-menu a:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .sidebar-menu a:hover {
-  background-color: #34495e;
-  border-left-color: #3498db;
+  background: rgba(255, 255, 255, 0.08);
+  border-left-color: var(--color-accent);
+  color: var(--color-text-on-primary);
 }
 
 .sidebar-menu a.active {
-  background-color: #34495e;
-  border-left-color: #3498db;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.12);
+  border-left-color: var(--color-accent);
+  color: var(--color-text-on-primary);
+  font-weight: var(--font-weight-medium);
 }
 
+.menu-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.menu-label {
+  flex: 1;
+}
+
+/* Mobile Menu Button */
+.mobile-menu-button {
+  position: fixed;
+  top: var(--spacing-md);
+  left: var(--spacing-md);
+  z-index: var(--z-fixed);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  width: 48px;
+  height: 48px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--elevation-6);
+  transition: box-shadow var(--transition-base), transform var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-menu-button .material-icons {
+  font-size: 24px;
+  color: var(--color-text-on-primary);
+}
+
+.mobile-menu-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.mobile-menu-button:hover::before {
+  width: 48px;
+  height: 48px;
+}
+
+.mobile-menu-button:hover {
+  background: var(--color-primary-dark);
+  box-shadow: var(--elevation-8);
+}
+
+.mobile-menu-button:active {
+  box-shadow: var(--elevation-4);
+  transform: scale(0.95);
+}
+
+/* Bottom Navigation (Mobile) - Material Design */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  display: none;
+  justify-content: space-around;
+  align-items: center;
+  padding: var(--spacing-sm) 0 calc(var(--spacing-sm) + env(safe-area-inset-bottom));
+  box-shadow: var(--elevation-8);
+  z-index: var(--z-sticky);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: var(--spacing-sm);
+  color: var(--color-text-light);
+  text-decoration: none;
+  transition: background-color var(--transition-base), color var(--transition-base);
+  flex: 1;
+  max-width: 120px;
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.bottom-nav-item::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: var(--color-primary-lighter);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+  opacity: 0.5;
+}
+
+.bottom-nav-item:hover::before {
+  width: 100px;
+  height: 100px;
+}
+
+.bottom-nav-item:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+}
+
+.bottom-nav-item.active {
+  color: var(--color-primary);
+  background: var(--color-primary-lighter);
+}
+
+.bottom-nav-item.active::before {
+  opacity: 1;
+  width: 100px;
+  height: 100px;
+}
+
+.bottom-nav-icon {
+  font-size: 24px;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Main Content */
 .main-content {
   flex: 1;
-  padding: 30px;
-  background-color: #f5f6fa;
+  padding: var(--spacing-xl);
+  background-color: var(--color-bg);
   overflow-y: auto;
+  min-height: 100vh;
+  margin-left: 260px;
+  padding-bottom: calc(var(--spacing-xl) + 60px); /* Space for bottom nav on mobile */
+}
+
+/* Drawer Menu Styles */
+.drawer-menu .sidebar-menu {
+  background: transparent;
+}
+
+.drawer-menu .sidebar-menu a {
+  color: var(--color-text);
+  border-left-color: transparent;
+}
+
+.drawer-menu .sidebar-menu a:hover {
+  background: var(--color-surface-hover);
+  border-left-color: var(--color-primary);
+}
+
+.drawer-menu .sidebar-menu a.active {
+  background: var(--color-primary-lighter);
+  border-left-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+/* Drawer Branding */
+.drawer-branding {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+}
+
+.drawer-branding .company-logo-container.mobile {
+  width: 48px;
+  height: 48px;
+  background: var(--color-primary-lighter);
+  border-radius: var(--radius-md);
+}
+
+.drawer-branding .company-logo-container.mobile .material-icons {
+  font-size: 24px;
+  color: var(--color-primary-dark);
+}
+
+.drawer-branding .app-name-container.mobile {
+  flex: 1;
+  align-items: flex-start;
+  text-align: left;
+  gap: 2px;
+}
+
+.drawer-branding .app-name-container.mobile .company-name-small {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.drawer-branding .app-name-container.mobile .app-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.drawer-branding .app-name-container.mobile .app-subtitle {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
+  .mobile-menu-button {
+    display: flex;
+  }
+
+  .bottom-nav {
+    display: flex;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: var(--spacing-lg);
+    padding-top: calc(var(--spacing-lg) + 64px); /* Space for mobile menu button */
+    padding-bottom: calc(var(--spacing-lg) + 80px); /* Space for bottom nav */
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: var(--spacing-md);
+    padding-top: calc(var(--spacing-md) + 64px);
+    padding-bottom: calc(var(--spacing-md) + 80px);
+  }
 }
 

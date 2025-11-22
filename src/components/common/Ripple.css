@@ -1,0 +1,30 @@
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(0);
+  animation: ripple-animation 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple-container.dark .ripple-effect {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.ripple-container.primary .ripple-effect {
+  background: rgba(255, 255, 255, 0.4);
+}
+

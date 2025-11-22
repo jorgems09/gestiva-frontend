@@ -1,7 +1,33 @@
-export default function Loading() {
+import { SkeletonText } from './Skeleton';
+import './Loading.css';
+
+interface LoadingProps {
+  message?: string;
+  fullScreen?: boolean;
+}
+
+export default function Loading({ message = 'Cargando...', fullScreen = false }: LoadingProps) {
+  if (fullScreen) {
+    return (
+      <div className="loading-fullscreen">
+        <div className="loading-spinner"></div>
+        <p className="loading-message">{message}</p>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ textAlign: 'center', padding: '40px' }}>
-      <div style={{ fontSize: '18px', color: '#7f8c8d' }}>Cargando...</div>
+    <div className="loading-container">
+      <div className="loading-spinner"></div>
+      <p className="loading-message">{message}</p>
+    </div>
+  );
+}
+
+export function LoadingSkeleton() {
+  return (
+    <div className="loading-skeleton-container">
+      <SkeletonText lines={5} />
     </div>
   );
 }

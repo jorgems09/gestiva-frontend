@@ -9,5 +9,7 @@ export const movementsApi = {
   getById: (id: number) => apiClient.get<MovementHeader>(`/movements/${id}`),
   create: (data: CreateMovementDto) =>
     apiClient.post<MovementHeader>('/movements', data),
+  cancel: (id: number) =>
+    apiClient.post<MovementHeader>(`/movements/${id}/cancel`, {}),
 };
 
