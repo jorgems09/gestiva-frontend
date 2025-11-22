@@ -106,11 +106,11 @@
 }
 
 .data-table tbody tr:hover {
-  background-color: var(--color-primary-lighter);
+  background-color: var(--color-surface-hover);
 }
 
 .data-table tbody tr:active {
-  background-color: var(--color-primary-light);
+  background-color: var(--color-surface-hover);
 }
 
 .data-table tbody tr:last-child td {

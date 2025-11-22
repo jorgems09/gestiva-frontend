@@ -74,7 +74,7 @@
 }
 
 .card-item.highlight {
-  background: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   padding: var(--spacing-md);
   margin: var(--spacing-sm) calc(-1 * var(--spacing-xl));
   border-radius: var(--radius-md);
@@ -91,6 +91,12 @@
   color: var(--color-text);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
+}
+
+/* Asegurar que span y strong dentro de highlight usen color blanco */
+.card-item.highlight span,
+.card-item.highlight strong {
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 
 .movements-table {
