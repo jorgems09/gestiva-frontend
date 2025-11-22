@@ -1,17 +1,17 @@
 :root {
   /* Paleta de Colores - Tema Profesional Sobrio y Estándar */
   /* Azul gris oscuro como base - profesional y elegante */
-  --color-primary: #2F3640; /* Azul gris oscuro - Color principal */
-  --color-primary-dark: #242A32;
-  --color-primary-light: #3D4753;
-  --color-primary-lighter: #4A5662;
+  --color-primary: #2d3e50; /* Azul gris oscuro - Color principal (exacto de la imagen) */
+  --color-primary-dark: #1f2a36;
+  --color-primary-light: #3d4e61;
+  --color-primary-lighter: #4a5c6f;
   
-  --color-accent: #3D4753; /* Azul gris medio - Acentos */
-  --color-accent-dark: #242A32;
-  --color-accent-2: #4A5662; /* Azul gris claro - Acentos secundarios */
-  --color-accent-2-dark: #2F3640;
-  --color-accent-3: #556B7A; /* Azul gris con más saturación - Acentos terciarios */
-  --color-accent-3-dark: #3D4753;
+  --color-accent: #3d4e61; /* Azul gris medio - Acentos */
+  --color-accent-dark: #1f2a36;
+  --color-accent-2: #4a5c6f; /* Azul gris claro - Acentos secundarios */
+  --color-accent-2-dark: #2d3e50;
+  --color-accent-3: #556b7a; /* Azul gris con más saturación - Acentos terciarios */
+  --color-accent-3-dark: #3d4e61;
   
   /* Colores complementarios neutrales y profesionales */
   --color-secondary: #546E7A; /* Azul grisáceo - Secundario */
@@ -39,7 +39,7 @@
   --color-warning-light: #FEF5E7;
   --color-error: #E74C3C;
   --color-error-light: #FADBD8;
-  --color-info: #2F3640; /* Consistente con primary */
+  --color-info: #2d3e50; /* Consistente con primary */
   --color-info-light: #E8EAED;
   
   /* Colores de Stock */

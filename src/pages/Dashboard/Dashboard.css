@@ -74,12 +74,12 @@
 }
 
 .card-item.highlight {
-  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-accent-3) 100%);
+  background: var(--color-primary);
   padding: var(--spacing-md);
   margin: var(--spacing-sm) calc(-1 * var(--spacing-xl));
   border-radius: var(--radius-md);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-primary-dark);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .card-item span {
