@@ -1,22 +1,22 @@
 :root {
   /* Paleta de Colores - Tema Profesional Sobrio y Estándar */
-  /* Material Design Blue como base - universal y profesional */
-  --color-primary: #2196F3; /* Azul Material Design - Color principal */
-  --color-primary-dark: #1976D2;
-  --color-primary-light: #64B5F6;
-  --color-primary-lighter: #BBDEFB;
+  /* Azul gris oscuro como base - profesional y elegante */
+  --color-primary: #2F3640; /* Azul gris oscuro - Color principal */
+  --color-primary-dark: #242A32;
+  --color-primary-light: #3D4753;
+  --color-primary-lighter: #4A5662;
   
-  --color-accent: #1976D2; /* Azul oscuro - Acentos */
-  --color-accent-dark: #1565C0;
-  --color-accent-2: #42A5F5; /* Azul medio - Acentos secundarios */
-  --color-accent-2-dark: #1976D2;
-  --color-accent-3: #1E88E5; /* Azul sólido - Acentos terciarios */
-  --color-accent-3-dark: #1565C0;
+  --color-accent: #3D4753; /* Azul gris medio - Acentos */
+  --color-accent-dark: #242A32;
+  --color-accent-2: #4A5662; /* Azul gris claro - Acentos secundarios */
+  --color-accent-2-dark: #2F3640;
+  --color-accent-3: #556B7A; /* Azul gris con más saturación - Acentos terciarios */
+  --color-accent-3-dark: #3D4753;
   
   /* Colores complementarios neutrales y profesionales */
   --color-secondary: #546E7A; /* Azul grisáceo - Secundario */
   --color-secondary-dark: #455A64;
-  --color-tertiary: #78909C; /* Gris azulado - Terciario */
+  --color-tertiary: #6B8494; /* Gris azulado más claro - Terciario */
   
   /* Colores Neutros */
   --color-bg: #FAFAFA;
@@ -39,8 +39,8 @@
   --color-warning-light: #FEF5E7;
   --color-error: #E74C3C;
   --color-error-light: #FADBD8;
-  --color-info: #2196F3; /* Consistente con primary */
-  --color-info-light: #E3F2FD;
+  --color-info: #2F3640; /* Consistente con primary */
+  --color-info-light: #E8EAED;
   
   /* Colores de Stock */
   --color-stock-high: #27AE60;
