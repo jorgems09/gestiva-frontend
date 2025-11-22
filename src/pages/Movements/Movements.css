@@ -158,11 +158,12 @@
 }
 
 .totals-summary {
-  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-accent-3) 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   padding: var(--spacing-lg);
   border-radius: var(--radius-md);
   margin-top: var(--spacing-lg);
-  border: 1px solid var(--color-primary-light);
+  border: 1px solid var(--color-primary-dark);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .total-row {
@@ -170,8 +171,8 @@
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-sm) 0;
-  border-bottom: 1px solid var(--color-border-light);
-  color: var(--color-text);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .total-row:last-child {
@@ -183,17 +184,26 @@
   font-weight: var(--font-weight-bold);
   padding-top: var(--spacing-md);
   margin-top: var(--spacing-sm);
-  border-top: 2px solid var(--color-primary);
-  color: var(--color-primary-dark);
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 1);
+}
+
+.total-row.total-final strong {
+  color: rgba(255, 255, 255, 1);
 }
 
 .total-row.error {
-  color: var(--color-error);
+  color: rgba(255, 255, 255, 1);
   font-weight: var(--font-weight-semibold);
-  background: var(--color-error-light);
+  background: rgba(231, 76, 60, 0.3);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-sm);
   margin: var(--spacing-sm) 0;
+  border: 1px solid rgba(231, 76, 60, 0.5);
+}
+
+.total-row.error strong {
+  color: rgba(255, 255, 255, 1);
 }
 
 .form-actions-fixed {
@@ -212,21 +222,22 @@
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-md);
-  background: var(--color-primary-lighter);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-md);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .total-label {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .total-amount {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
-  color: var(--color-primary-dark);
+  color: rgba(255, 255, 255, 1);
 }
 
 .form-actions-buttons {

@@ -513,7 +513,7 @@ function MovementForm({
                 <input
                   type="number"
                   step="1"
-                  min="0.001"
+                  min="0"
                   value={detail.quantity}
                   onChange={(e) => handleDetailChange(index, 'quantity', parseFloat(e.target.value) || 0)}
                   required
@@ -588,8 +588,8 @@ function MovementForm({
                   <option value="EFECTIVO">Efectivo</option>
                   <option value="TRANSFERENCIA">Transferencia</option>
                   <option value="CHEQUE">Cheque</option>
-                  <option value="TARJETA">Tarjeta</option>
-                  <option value="CREDITO">Crédito</option>
+                  <option value="TARJETA_DEBITO">Tarjeta Débito</option>
+                  <option value="TARJETA_CREDITO">Tarjeta Crédito</option>
                 </select>
               </div>
               <div className="form-group">
@@ -610,8 +610,11 @@ function MovementForm({
                     checked={payment.isCredit || false}
                     onChange={(e) => handlePaymentChange(index, 'isCredit', e.target.checked)}
                   />
-                  Es Crédito
+                  Genera Cuenta por Cobrar
                 </label>
+                <small className="form-hint">
+                  Marca si el pago genera una cuenta por cobrar (crédito al cliente)
+                </small>
               </div>
             </div>
             {payments.length > 1 && (
