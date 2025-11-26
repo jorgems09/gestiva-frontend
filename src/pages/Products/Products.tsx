@@ -295,7 +295,18 @@ function ProductForm({
             step="1"
             min="0"
             defaultValue={product?.stock || ''}
+            disabled={!!product}
+            title={
+              product
+                ? 'El stock no se puede editar directamente. Use movimientos de tipo ENTRADA_ESPECIAL o SALIDA_ESPECIAL para ajustar el inventario.'
+                : undefined
+            }
           />
+          {product && (
+            <small className="form-hint" style={{ color: 'var(--color-warning)', display: 'block', marginTop: '0.5rem' }}>
+              ⚠️ El stock debe ajustarse mediante movimientos (ENTRADA_ESPECIAL o SALIDA_ESPECIAL) para mantener la trazabilidad.
+            </small>
+          )}
         </div>
       </div>
       <div className="form-actions">

@@ -318,3 +318,280 @@
   }
 }
 
+/* Credit Toggle Switch Styles */
+.credit-toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.credit-toggle-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+  user-select: none;
+}
+
+.credit-toggle-label:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.credit-toggle-text {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.credit-icon {
+  font-size: 20px;
+  color: var(--color-primary);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: all var(--transition-fast);
+  border-radius: 28px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: all var(--transition-fast);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-input:checked + .toggle-slider {
+  background-color: var(--color-primary);
+}
+
+.toggle-input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.toggle-input:disabled + .toggle-slider {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-primary);
+}
+
+.toggle-input:focus + .toggle-slider {
+  box-shadow: 0 0 0 3px var(--color-primary-lighter);
+}
+
+/* Credit Info Message */
+.credit-info {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background-color: var(--color-info-light);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.credit-info .info-icon {
+  font-size: 16px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.credit-info span:last-child {
+  flex: 1;
+}
+
+/* Responsive adjustments for credit toggle */
+@media (max-width: 768px) {
+  .credit-toggle-label {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .toggle-switch {
+    align-self: flex-end;
+  }
+}
+
+/* Receivables Section Styles */
+.receivables-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--color-info-light);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.receivables-info .info-icon {
+  font-size: 18px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.receivables-list {
+  margin-top: var(--spacing-md);
+}
+
+.receivables-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.receivables-table thead {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.receivables-table th {
+  padding: var(--spacing-md);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.receivables-table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: var(--font-size-sm);
+}
+
+.receivables-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.receivables-table tbody tr:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.receivables-table tbody tr.selected {
+  background-color: var(--color-primary-lighter);
+  border-left: 3px solid var(--color-primary);
+}
+
+.receivables-table tbody tr.selected:hover {
+  background-color: var(--color-primary-light);
+}
+
+.receivables-table input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.receivable-amount-input {
+  width: 120px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-fast);
+}
+
+.receivable-amount-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-lighter);
+}
+
+.status-badge.pending {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+}
+
+.selected-receivables-summary {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+  border-radius: var(--radius-md);
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  font-size: var(--font-size-lg);
+}
+
+.selected-receivables-summary strong {
+  color: rgba(255, 255, 255, 1);
+}
+
+.info-message {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  background-color: var(--color-surface-hover);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  border-left: 3px solid var(--color-info);
+}
+
+.info-message .material-icons {
+  color: var(--color-info);
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.total-row.info {
+  color: rgba(255, 255, 255, 1);
+  font-weight: var(--font-weight-semibold);
+  background: rgba(52, 152, 219, 0.3);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  margin: var(--spacing-sm) 0;
+  border: 1px solid rgba(52, 152, 219, 0.5);
+}
+
+.total-row.info strong {
+  color: rgba(255, 255, 255, 1);
+}
+

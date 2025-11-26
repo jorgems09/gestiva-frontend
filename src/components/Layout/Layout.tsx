@@ -20,6 +20,7 @@ const menuItems: MenuItem[] = [
   { path: '/movements', label: 'Movimientos', icon: 'shopping_cart', mobilePriority: true },
   { path: '/products', label: 'Productos', icon: 'inventory_2', mobilePriority: true },
   { path: '/clients', label: 'Clientes', icon: 'people', mobilePriority: true },
+  { path: '/suppliers', label: 'Proveedores', icon: 'business', mobilePriority: true },
   { path: '/reports', label: 'Reportes', icon: 'assessment', mobilePriority: false },
 ];
 

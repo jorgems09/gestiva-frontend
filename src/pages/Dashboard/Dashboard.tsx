@@ -3,6 +3,7 @@ import { movementsApi } from '../../api/movements.api';
 import { reportsApi } from '../../api/reports.api';
 import Loading from '../../components/common/Loading';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { ProcessType } from '../../constants/process-types';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -35,7 +36,10 @@ export default function Dashboard() {
     return <Loading />;
   }
 
-  const recentMovements = movements?.slice(0, 5) || [];
+  // Filtrar solo movimientos activos (excluir anulados y movimientos de anulación)
+  const recentMovements = movements
+    ?.filter(m => m.status === 1 && !m.consecutive.startsWith('ANL-'))
+    .slice(0, 5) || [];
 
   return (
     <div className="dashboard">
@@ -86,7 +90,7 @@ export default function Dashboard() {
                   <th>Consecutivo</th>
                   <th>Tipo</th>
                   <th>Fecha</th>
-                  <th>Cliente</th>
+                  <th>Cliente/Proveedor</th>
                   <th>Total</th>
                 </tr>
               </thead>
@@ -96,7 +100,26 @@ export default function Dashboard() {
                     <td>{movement.consecutive}</td>
                     <td>{movement.processType}</td>
                     <td>{formatDate(movement.documentDate)}</td>
-                    <td>{movement.client?.name || '-'}</td>
+                    <td>
+                      {(() => {
+                        // Para compras y gastos, mostrar proveedor
+                        if (
+                          movement.processType === ProcessType.PURCHASE ||
+                          movement.processType === ProcessType.EXPENSE
+                        ) {
+                          return movement.supplier?.name || movement.supplierName || '-';
+                        }
+                        // Para ventas y recibos, mostrar cliente
+                        if (
+                          movement.processType === ProcessType.SALE ||
+                          movement.processType === ProcessType.RECEIPT
+                        ) {
+                          return movement.client?.name || '-';
+                        }
+                        // Para otros tipos, intentar ambos
+                        return movement.client?.name || movement.supplier?.name || movement.supplierName || '-';
+                      })()}
+                    </td>
                     <td>{formatCurrency(movement.total)}</td>
                   </tr>
                 ))}

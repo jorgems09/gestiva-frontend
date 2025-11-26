@@ -80,6 +80,12 @@
   border-radius: var(--radius-md);
   font-weight: var(--font-weight-semibold);
   color: rgba(255, 255, 255, 0.95);
+  transition: all var(--transition-fast);
+}
+
+.card-item.highlight:hover {
+  box-shadow: var(--elevation-2);
+  transform: translateY(-2px);
 }
 
 .card-item span {

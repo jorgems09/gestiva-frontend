@@ -27,13 +27,16 @@ export interface CreateMovementDto {
   processType?: ProcessType;
   documentDate: string;
   clientCode?: string;
-  supplierName?: string;
+  supplierCode?: string;
+  supplierName?: string; // Mantener por compatibilidad
   notes?: string;
   lotNumber?: string;
   processState?: string;
   grossWeight?: number;
   netWeight?: number;
   freightCost?: number;
+  retentionRate?: number; // Porcentaje de retención (ej: 2.5). Si no se especifica, usa default. Si es 0, no aplica retención.
+  deductionRate?: number; // Porcentaje de deducción (ej: 1). Si no se especifica, usa default. Si es 0, no aplica deducción.
   details: MovementDetail[];
   payments: PaymentDetail[];
   receivablesToSettle?: RelatedAccountDto[];
@@ -56,7 +59,8 @@ export interface MovementHeader {
   grossWeight?: number;
   netWeight?: number;
   freightCost?: number;
-  supplierName?: string;
+  supplierName?: string; // Mantener por compatibilidad
+  supplier?: Supplier; // Nueva relación
   referenceDocuments?: string[];
   subtotal: number;
   taxTotal: number;
@@ -74,6 +78,14 @@ export interface MovementHeader {
 }
 
 export interface Client {
+  id: number;
+  code: string;
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface Supplier {
   id: number;
   code: string;
   name: string;
