@@ -1480,12 +1480,21 @@
 
 /* Products Table (New Design) */
 .products-table-container {
-  overflow-x: auto;
+  overflow: visible; /* ✅ CAMBIO CRÍTICO: De auto a visible */
   -webkit-overflow-scrolling: touch;
   margin-top: 1rem;
   border-radius: 0.5rem;
   border: 1px solid #e5e7eb;
-  /* NO usar overflow-y hidden para permitir que el dropdown del SearchableSelect sea visible */
+  /* Permitir scroll solo en el eje X si es necesario */
+}
+
+/* Wrapper para scroll horizontal sin afectar dropdown */
+.products-table-scroll-wrapper {
+  overflow-x: auto;
+  overflow-y: visible; /* CRÍTICO: visible para permitir dropdown */
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  z-index: 1;
 }
 
 .products-table-new {
@@ -1514,6 +1523,11 @@
   text-align: right;
 }
 
+.products-table-new tbody {
+  position: relative;
+  z-index: 1;
+}
+
 .products-table-new tbody tr {
   border-bottom: 1px solid #e5e7eb;
   transition: background-color 0.2s ease;
@@ -1522,12 +1536,7 @@
 
 .products-table-new tbody tr:hover {
   background: #f9fafb;
-  z-index: 1; /* Elevar ligeramente en hover */
-}
-
-/* Fila que contiene un SearchableSelect abierto debe tener z-index alto */
-.products-table-new tbody tr:has(.searchable-select.open) {
-  z-index: 50;
+  z-index: 2; /* Elevar ligeramente en hover */
 }
 
 .products-table-new td {
@@ -1539,25 +1548,34 @@
 /* Asegurar que la celda del producto tenga suficiente espacio para el dropdown */
 .products-table-new td:first-child {
   min-width: 300px;
-  overflow: visible; /* CRÍTICO: permitir que el dropdown sea visible */
+  overflow: visible !important; /* CRÍTICO: permitir que el dropdown sea visible */
   position: relative; /* Contexto de posicionamiento para el SearchableSelect */
 }
 
 /* SearchableSelect dentro de la tabla */
 .products-table-new td .searchable-select {
   position: relative;
-  z-index: 10; /* Aumentar cuando está abierto */
+  z-index: 10; /* Base z-index */
 }
 
-.products-table-new td .searchable-select.open {
-  z-index: 100; /* Mucho más alto cuando está abierto */
+/* Cuando está abierto, toda la celda necesita elevarse */
+.products-table-new td:has(.searchable-select.open) {
+  z-index: 999 !important;
+}
+
+/* Alternativamente, si :has no funciona, podemos usar una clase que se agregue con JS */
+.products-table-new td.dropdown-active {
+  z-index: 999 !important;
 }
 
 .products-table-new td .searchable-select-dropdown {
-  z-index: 10001; /* Muy alto para estar sobre todo */
-  min-width: 350px; /* Ancho mínimo para mostrar bien los nombres de productos */
-  max-width: 500px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* Sombra más prominente */
+  position: absolute !important; /* Forzar absoluto */
+  z-index: 99999 !important; /* Muy alto para estar sobre todo */
+  min-width: 400px !important; /* Ancho mínimo para mostrar bien los nombres de productos */
+  max-width: 600px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important; /* Sombra más prominente */
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
 }
 
 .products-table-new td.text-right {

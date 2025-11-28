@@ -1158,7 +1158,7 @@ function MovementForm({
               <path d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 7.27094L4 42.4379Z" fill="currentColor"/>
             </svg>
           </div>
-          <h2 className="form-header-title">Gestiva</h2>
+          <h2 className="form-header-title">ERP System</h2>
         </div>
         <div className="form-header-right">
           <button type="button" onClick={onCancel} className="btn-header-cancel" disabled={isLoading}>
@@ -1419,7 +1419,8 @@ function MovementForm({
                 </div>
 
                 <div className="products-table-container">
-                  <table className="products-table-new">
+                  <div className="products-table-scroll-wrapper">
+                    <table className="products-table-new">
                     <thead>
                       <tr>
                         <th>Producto</th>
@@ -1535,7 +1536,8 @@ function MovementForm({
                         );
                       })}
                     </tbody>
-                  </table>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
