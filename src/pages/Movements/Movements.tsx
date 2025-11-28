@@ -823,7 +823,7 @@ function MovementForm({
         description: '',
         quantity: 1,
         unitPrice: 0,
-        taxRate: undefined, // Usará el default del backend (19%) si no se especifica
+        taxRate: 19, // Valor por defecto: 19%
       },
   ]);
   const [payments, setPayments] = useState<PaymentDetail[]>([
@@ -1011,7 +1011,7 @@ function MovementForm({
         description: '',
         quantity: 1,
         unitPrice: 0,
-        taxRate: undefined, // Usará el default del backend (19%) si no se especifica
+        taxRate: 19, // Valor por defecto: 19%
       },
     ]);
   };
@@ -1158,7 +1158,7 @@ function MovementForm({
               <path d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 7.27094L4 42.4379Z" fill="currentColor"/>
             </svg>
           </div>
-          <h2 className="form-header-title">Gestiva</h2>
+          <h2 className="form-header-title">ERP System</h2>
         </div>
         <div className="form-header-right">
           <button type="button" onClick={onCancel} className="btn-header-cancel" disabled={isLoading}>
@@ -1501,16 +1501,24 @@ function MovementForm({
                                 step="0.01"
                                 min="0"
                                 max="100"
-                                value={detail.taxRate !== undefined ? detail.taxRate : 19}
+                                value={detail.taxRate !== undefined ? detail.taxRate : ''}
                                 onChange={(e) => {
                                   const inputValue = e.target.value;
-                                  if (inputValue === '') {
-                                    handleDetailChange(index, 'taxRate', undefined);
+                                  if (inputValue === '' || inputValue === null) {
+                                    // Si está vacío, usar 19 por defecto
+                                    handleDetailChange(index, 'taxRate', 19);
                                   } else {
                                     const numValue = parseFloat(inputValue);
-                                    if (!isNaN(numValue)) {
+                                    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
                                       handleDetailChange(index, 'taxRate', numValue);
                                     }
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  // Al perder el foco, si está vacío poner 19
+                                  const inputValue = e.target.value;
+                                  if (inputValue === '' || inputValue === null) {
+                                    handleDetailChange(index, 'taxRate', 19);
                                   }
                                 }}
                                 className="form-input-xs"
