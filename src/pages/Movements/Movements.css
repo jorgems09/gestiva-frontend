@@ -1217,7 +1217,7 @@
   z-index: var(--z-fullscreen-form, 1100); /* Por encima del sidebar (1030) y modal backdrop (1040) */
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: hidden; /* Mantener hidden para que el form se mantenga dentro de la pantalla */
 }
 
 /* Sticky Header */
@@ -1310,6 +1310,7 @@
 .form-main-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: visible; /* Permitir que elementos salgan horizontalmente (dropdowns) */
   padding: 2rem;
   max-width: 1600px;
   width: 100%;
@@ -1547,35 +1548,58 @@
 
 /* Asegurar que la celda del producto tenga suficiente espacio para el dropdown */
 .products-table-new td:first-child {
-  min-width: 300px;
+  min-width: 350px; /* Aumentar min-width */
+  width: auto; /* Permitir que se expanda si es necesario */
   overflow: visible !important; /* CRÍTICO: permitir que el dropdown sea visible */
   position: relative; /* Contexto de posicionamiento para el SearchableSelect */
 }
 
-/* SearchableSelect dentro de la tabla */
+/* Asegurar que el trigger del SearchableSelect sea clickeable */
+.products-table-new td .searchable-select-trigger {
+  cursor: pointer;
+  pointer-events: auto; /* Asegurar que los clics funcionen */
+  z-index: 1;
+  position: relative;
+}
+
+/* SearchableSelect dentro de la tabla - NO interferir con su funcionalidad */
 .products-table-new td .searchable-select {
   position: relative;
-  z-index: 10; /* Base z-index */
+  z-index: 10;
 }
 
-/* Cuando está abierto, toda la celda necesita elevarse */
-.products-table-new td:has(.searchable-select.open) {
-  z-index: 999 !important;
+/* Cuando está abierto, elevar el z-index */
+.products-table-new td .searchable-select.open {
+  z-index: 1000;
 }
 
-/* Alternativamente, si :has no funciona, podemos usar una clase que se agregue con JS */
-.products-table-new td.dropdown-active {
-  z-index: 999 !important;
-}
-
+/* Dropdown con máxima prioridad - debe estar sobre TODO */
 .products-table-new td .searchable-select-dropdown {
-  position: absolute !important; /* Forzar absoluto */
-  z-index: 99999 !important; /* Muy alto para estar sobre todo */
-  min-width: 400px !important; /* Ancho mínimo para mostrar bien los nombres de productos */
+  position: absolute !important;
+  z-index: 9999999 !important; /* Mucho más alto que cualquier otro elemento (más que form-fullscreen: 1100) */
+  min-width: 400px !important;
   max-width: 600px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important; /* Sombra más prominente */
-  background: white !important;
-  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25) !important; /* Sombra más prominente */
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  pointer-events: auto !important; /* Asegurar que los clics funcionen */
+}
+
+/* La celda que contiene el dropdown abierto debe elevarse */
+.products-table-new tbody tr td:first-child {
+  position: relative;
+}
+
+/* Elevar la fila completa cuando el dropdown está abierto */
+.products-table-new tbody tr:has(.searchable-select.open) {
+  z-index: 1001 !important;
+  position: relative;
+}
+
+/* Fallback si :has() no funciona - usar clase manual */
+.products-table-new tbody tr.dropdown-active {
+  z-index: 1001 !important;
+  position: relative;
 }
 
 .products-table-new td.text-right {

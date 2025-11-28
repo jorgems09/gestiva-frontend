@@ -55,7 +55,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  z-index: 9999; /* Z-index muy alto para asegurar que flote sobre todos los elementos, incluyendo report-card */
+  z-index: 99999; /* Z-index MUY alto para asegurar que flote sobre todos los elementos */
   max-height: 300px;
   overflow: hidden;
   display: flex;
