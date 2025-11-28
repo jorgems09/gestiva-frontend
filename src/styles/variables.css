@@ -1,35 +1,35 @@
 :root {
-  /* Paleta de Colores - Tema Profesional Sobrio y Estándar */
-  /* Azul gris oscuro como base - profesional y elegante */
-  --color-primary: #2d3e50; /* Azul gris oscuro - Color principal (exacto de la imagen) */
-  --color-primary-dark: #1f2a36;
-  --color-primary-light: #3d4e61;
-  --color-primary-lighter: #4a5c6f;
+  /* Paleta de Colores - Diseño Moderno */
+  /* Azul brillante como base - moderno y profesional */
+  --color-primary: #2b6cee; /* Azul principal del diseño */
+  --color-primary-dark: #1e4fd8;
+  --color-primary-light: #4d7ef0;
+  --color-primary-lighter: #eff6ff;
   
-  --color-accent: #3d4e61; /* Azul gris medio - Acentos */
-  --color-accent-dark: #1f2a36;
-  --color-accent-2: #4a5c6f; /* Azul gris claro - Acentos secundarios */
-  --color-accent-2-dark: #2d3e50;
-  --color-accent-3: #556b7a; /* Azul gris con más saturación - Acentos terciarios */
-  --color-accent-3-dark: #3d4e61;
+  --color-accent: #2b6cee;
+  --color-accent-dark: #1e4fd8;
+  --color-accent-2: #4d7ef0;
+  --color-accent-2-dark: #2b6cee;
+  --color-accent-3: #6b8ef2;
+  --color-accent-3-dark: #4d7ef0;
   
   /* Colores complementarios neutrales y profesionales */
-  --color-secondary: #546E7A; /* Azul grisáceo - Secundario */
-  --color-secondary-dark: #455A64;
-  --color-tertiary: #6B8494; /* Gris azulado más claro - Terciario */
+  --color-secondary: #4c669a;
+  --color-secondary-dark: #3d5278;
+  --color-tertiary: #6b8494;
   
-  /* Colores Neutros */
-  --color-bg: #FAFAFA;
+  /* Colores Neutros - Diseño Moderno */
+  --color-bg: #f6f6f8; /* Background light del diseño */
   --color-surface: #FFFFFF;
-  --color-surface-hover: #F5F5F5;
-  --color-border: #E9ECEF;
-  --color-border-light: #F1F3F5;
+  --color-surface-hover: #f9fafb;
+  --color-border: #e5e7eb;
+  --color-border-light: #f1f3f5;
   
   /* Colores de Texto */
-  --color-text: #2C3E50;
-  --color-text-secondary: #5A6C7D;
-  --color-text-light: #7F8C8D;
-  --color-text-lighter: #95A5A6;
+  --color-text: #0d121b; /* Texto principal del diseño */
+  --color-text-secondary: #4c669a; /* Texto secundario del diseño */
+  --color-text-light: #6b7280;
+  --color-text-lighter: #9ca3af;
   --color-text-on-primary: #FFFFFF;
   
   /* Colores de Estado */
@@ -47,8 +47,8 @@
   --color-stock-medium: #F39C12;
   --color-stock-low: #E74C3C;
   
-  /* Tipografía - Montserrat */
-  --font-primary: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Tipografía - Inter (del diseño) */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-icons: 'Material Icons';
   --font-size-xs: 0.75rem; /* 12px - Caption */
   --font-size-sm: 0.875rem; /* 14px - Body 2 */

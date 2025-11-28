@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { suppliersApi } from '../../api/suppliers.api';
 import Loading from '../../components/common/Loading';
+import StatusBadge from '../../components/common/StatusBadge';
 import { useToast } from '../../hooks/useToast';
 import type { Supplier } from '../../types/supplier.types';
 import './Suppliers.css';
@@ -10,6 +11,13 @@ export default function Suppliers() {
   const [showForm, setShowForm] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    status: '',
+    city: '',
+    paymentTerms: '',
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const queryClient = useQueryClient();
 
   const { data: suppliers, isLoading } = useQuery({
@@ -79,30 +87,63 @@ export default function Suppliers() {
     setEditingSupplier(null);
   };
 
-  const filteredSuppliers =
-    suppliers?.filter(
-      (supplier) =>
-        supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.phone?.includes(searchTerm)
-    ) || [];
+  const handleExport = () => {
+    showToast('Funcionalidad de exportación en desarrollo', 'info');
+  };
+
+  const handleClearFilters = () => {
+    setFilters({ status: '', city: '', paymentTerms: '' });
+    setSearchTerm('');
+  };
+
+  // Filtrar proveedores
+  const filteredSuppliers = useMemo(() => {
+    if (!suppliers) return [];
+
+    return suppliers.filter((supplier) => {
+      // Búsqueda por texto
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesCode = supplier.code.toLowerCase().includes(searchLower);
+        const matchesName = supplier.name.toLowerCase().includes(searchLower);
+        const matchesEmail = supplier.email?.toLowerCase().includes(searchLower);
+        const matchesPhone = supplier.phone?.includes(searchTerm);
+        if (!matchesCode && !matchesName && !matchesEmail && !matchesPhone) {
+          return false;
+        }
+      }
+
+      // Por ahora no aplicamos filtros adicionales ya que no tenemos campos de ciudad, estado, etc.
+      // Estos se pueden agregar cuando el modelo de supplier lo incluya
+
+      return true;
+    });
+  }, [suppliers, searchTerm, filters]);
+
+  // Paginación
+  const paginatedSuppliers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredSuppliers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredSuppliers, currentPage]);
+
+  const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
 
   if (isLoading) {
     return <Loading />;
   }
 
   return (
-    <div className="clients-page">
-      <div className="page-header">
-        <h1>Proveedores</h1>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          <span className="material-icons btn-icon">
-            {showForm ? 'close' : 'business'}
-          </span>
-          {showForm ? 'Cancelar' : 'Nuevo Proveedor'}
+    <div className="suppliers-page">
+      <header className="suppliers-header">
+        <div className="suppliers-header-content">
+          <h1>Gestión de Proveedores</h1>
+          <p className="suppliers-header-subtitle">Administra y consulta la información de tus proveedores.</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} className="btn-add-supplier">
+          <span className="material-symbols-outlined">add</span>
+          <span className="truncate">{showForm ? 'Cancelar' : 'Agregar Proveedor'}</span>
         </button>
-      </div>
+      </header>
 
       {showForm && (
         <SupplierForm
@@ -114,101 +155,176 @@ export default function Suppliers() {
       )}
 
       {!showForm && (
-        <div className="clients-search">
-          <input
-            type="text"
-            placeholder="Buscar por nombre, código, email o teléfono..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="clients-search-input"
-          />
-        </div>
-      )}
-
-      <div className="clients-list">
-        {filteredSuppliers.length > 0 ? (
-          <div className="clients-table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Email</th>
-                  <th>Teléfono</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSuppliers.map((supplier) => (
-                  <tr key={supplier.id}>
-                    <td>
-                      <span className="client-code">{supplier.code}</span>
-                    </td>
-                    <td>
-                      <div className="client-name-cell">
-                        <div className="client-avatar-small">
-                          {supplier.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span>{supplier.name}</span>
-                      </div>
-                    </td>
-                    <td>
-                      {supplier.email ? (
-                        <a href={`mailto:${supplier.email}`} className="client-email-link">
-                          {supplier.email}
-                        </a>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td>
-                      {supplier.phone ? (
-                        <a href={`tel:${supplier.phone}`} className="client-phone-link">
-                          {supplier.phone}
-                        </a>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          onClick={() => handleEdit(supplier)}
-                          className="btn-icon-edit"
-                          title="Editar"
-                        >
-                          <span className="material-icons">edit</span>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(supplier)}
-                          className="btn-icon-delete"
-                          title="Eliminar"
-                          disabled={deleteMutation.isPending}
-                        >
-                          <span className="material-icons">delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="clients-empty">
-            <p>
-              {searchTerm
-                ? 'No se encontraron proveedores'
-                : 'No hay proveedores registrados'}
-            </p>
-            {!searchTerm && (
-              <button onClick={() => setShowForm(true)} className="btn-primary">
-                Crear primer proveedor
+        <>
+          <div className="suppliers-filters-section">
+            <div className="suppliers-search-row">
+              <div className="suppliers-search-wrapper">
+                <label className="suppliers-search-label">
+                  <div className="suppliers-search-container">
+                    <div className="suppliers-search-icon">
+                      <span className="material-symbols-outlined">search</span>
+                    </div>
+                    <input
+                      type="text"
+                      className="suppliers-search-input"
+                      placeholder="Buscar por Nombre, Código o NIT..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </label>
+              </div>
+              <button onClick={handleExport} className="btn-export">
+                <span className="material-symbols-outlined">download</span>
+                <span className="truncate">Exportar</span>
               </button>
+            </div>
+
+            <div className="suppliers-chips-row">
+              <button className="filter-chip">
+                <p>Estado: {filters.status || 'Todos'}</p>
+                <span className="material-symbols-outlined">expand_more</span>
+              </button>
+              <button className="filter-chip">
+                <p>Ciudad</p>
+                <span className="material-symbols-outlined">expand_more</span>
+              </button>
+              <button className="filter-chip">
+                <p>Condiciones de Pago</p>
+                <span className="material-symbols-outlined">expand_more</span>
+              </button>
+              <button onClick={handleClearFilters} className="filter-chip-clear">
+                <span className="material-symbols-outlined">delete</span>
+                <p>Borrar Filtros</p>
+              </button>
+            </div>
+          </div>
+
+          <div className="suppliers-table-wrapper">
+            {filteredSuppliers.length > 0 ? (
+              <>
+                <div className="suppliers-table-container">
+                  <div className="suppliers-table-overflow">
+                    <table className="suppliers-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">NIT</th>
+                          <th scope="col">Nombre</th>
+                          <th scope="col">Contacto</th>
+                          <th scope="col">Teléfono</th>
+                          <th scope="col">Ciudad</th>
+                          <th scope="col">Estado</th>
+                          <th className="text-right" scope="col">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedSuppliers.map((supplier) => (
+                          <tr key={supplier.id}>
+                            <td className="font-medium">{supplier.code}</td>
+                            <td className="font-medium">{supplier.name}</td>
+                            <td>{supplier.email || '-'}</td>
+                            <td>{supplier.phone || '-'}</td>
+                            <td>-</td>
+                            <td>
+                              <StatusBadge variant="success">Activo</StatusBadge>
+                            </td>
+                            <td className="text-right">
+                              <div className="suppliers-table-actions">
+                                <button
+                                  onClick={() => handleEdit(supplier)}
+                                  className="suppliers-action-btn"
+                                  title="Editar"
+                                >
+                                  <span className="material-symbols-outlined">edit</span>
+                                </button>
+                                <button
+                                  className="suppliers-action-btn"
+                                  title="Ver detalles"
+                                >
+                                  <span className="material-symbols-outlined">visibility</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(supplier)}
+                                  className="suppliers-action-btn suppliers-action-btn-danger"
+                                  title="Desactivar"
+                                  disabled={deleteMutation.isPending}
+                                >
+                                  <span className="material-symbols-outlined">toggle_off</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <nav className="suppliers-pagination" aria-label="Table navigation">
+                  <span className="suppliers-pagination-info">
+                    Mostrando <span className="font-semibold">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredSuppliers.length)}</span> de <span className="font-semibold">{filteredSuppliers.length}</span>
+                  </span>
+                  <ul className="suppliers-pagination-controls">
+                    <li>
+                      <button
+                        className="suppliers-pagination-btn"
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Anterior
+                      </button>
+                    </li>
+                    {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage === 1) {
+                        pageNum = i + 1;
+                      } else if (currentPage === totalPages) {
+                        pageNum = totalPages - 2 + i;
+                      } else {
+                        pageNum = currentPage - 1 + i;
+                      }
+                      return (
+                        <li key={pageNum}>
+                          <button
+                            className={`suppliers-pagination-number ${currentPage === pageNum ? 'active' : ''}`}
+                            onClick={() => setCurrentPage(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        </li>
+                      );
+                    })}
+                    <li>
+                      <button
+                        className="suppliers-pagination-btn"
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Siguiente
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </>
+            ) : (
+              <div className="suppliers-empty">
+                <p>
+                  {searchTerm
+                    ? 'No se encontraron proveedores'
+                    : 'No hay proveedores registrados'}
+                </p>
+                {!searchTerm && (
+                  <button onClick={() => setShowForm(true)} className="btn-primary">
+                    Crear primer proveedor
+                  </button>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
@@ -278,9 +394,6 @@ function SupplierForm({
         setName(exactMatch.name);
         setEmail(exactMatch.email || '');
         setPhone(exactMatch.phone || '');
-      } else if (name && matches.length === 0) {
-        // Si no hay coincidencia, limpiar campos precargados (para nuevo proveedor)
-        // Pero solo si el usuario ha empezado a escribir el código desde cero
       }
     } else {
       setSuggestions([]);
@@ -317,10 +430,6 @@ function SupplierForm({
     const value = e.target.value;
     setCode(value);
     setCodeError('');
-    // Si el código cambia manualmente, limpiar datos precargados
-    if (name && !suppliers?.find((s) => s.code.toLowerCase() === value.toLowerCase())) {
-      // Permitir que el usuario continúe editando
-    }
   };
 
   const handleSelectSuggestion = (supplier: Supplier) => {
@@ -369,8 +478,8 @@ function SupplierForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="client-form client-form-speed">
-      <div className="form-group client-code-group">
+    <form onSubmit={handleSubmit} className="supplier-form">
+      <div className="form-group supplier-code-group">
         <label>
           Código/NIT/ID Fiscal <span className="required">*</span>
         </label>
@@ -468,4 +577,3 @@ function SupplierForm({
     </form>
   );
 }
-

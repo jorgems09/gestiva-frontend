@@ -17,36 +17,21 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { path: '/', label: 'Dashboard', icon: 'dashboard', mobilePriority: true },
-  { path: '/movements', label: 'Movimientos', icon: 'shopping_cart', mobilePriority: true },
-  { path: '/products', label: 'Productos', icon: 'inventory_2', mobilePriority: true },
-  { path: '/clients', label: 'Clientes', icon: 'people', mobilePriority: true },
-  { path: '/suppliers', label: 'Proveedores', icon: 'business', mobilePriority: true },
+  { path: '/movements', label: 'Movimientos', icon: 'receipt_long', mobilePriority: true },
+  { path: '/products', label: 'Productos', icon: 'checkroom', mobilePriority: true },
+  { path: '/clients', label: 'Clientes', icon: 'groups', mobilePriority: true },
+  { path: '/suppliers', label: 'Proveedores', icon: 'group', mobilePriority: true },
   { path: '/reports', label: 'Reportes', icon: 'assessment', mobilePriority: false },
 ];
 
-export default function Layout({ children }: LayoutProps) {
-  const location = useLocation();
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+interface SidebarContentProps {
+  isActive: (path: string) => boolean;
+  isMobile: boolean;
+  setDrawerOpen: (open: boolean) => void;
+  location: { pathname: string };
+}
 
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (!mobile) {
-        setDrawerOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const isActive = (path: string) => location.pathname === path;
-
-  const mobileMenuItems = menuItems.filter((item) => item.mobilePriority);
-
-  const SidebarContent = () => (
+const SidebarContent = ({ isActive, isMobile, setDrawerOpen, location }: SidebarContentProps) => (
     <>
       <div className="sidebar-header">
         <div className="sidebar-branding">
@@ -71,13 +56,11 @@ export default function Layout({ children }: LayoutProps) {
             {brandingConfig.companyName && (
               <h2 className="company-name">{brandingConfig.companyName}</h2>
             )}
-            <h1 className="app-name">{brandingConfig.appName}</h1>
-            {brandingConfig.appSubtitle && (
-              <span className="app-subtitle">{brandingConfig.appSubtitle}</span>
-            )}
+            <p className="app-name">{brandingConfig.appSubtitle || brandingConfig.appName}</p>
           </div>
         </div>
       </div>
+      <nav className="sidebar-menu-wrapper">
         <ul className="sidebar-menu">
           {menuItems.map((item) => (
             <li key={item.path}>
@@ -92,15 +75,76 @@ export default function Layout({ children }: LayoutProps) {
             </li>
           ))}
         </ul>
+      </nav>
+      {/* Botón Nuevo Movimiento en sidebar (solo en página de movimientos) */}
+      {location.pathname === '/movements' && (
+        <div className="sidebar-actions">
+          <button
+            className="sidebar-new-movement-btn"
+            onClick={() => {
+              // Esto se manejará desde el componente Movements
+              window.dispatchEvent(new CustomEvent('open-movement-form'));
+            }}
+          >
+            <span className="truncate">Nuevo Movimiento</span>
+          </button>
+        </div>
+      )}
+      {/* Links de Configuración y Ayuda */}
+      <div className="sidebar-footer">
+        <Link
+          to="/settings"
+          className="sidebar-footer-link"
+          onClick={() => isMobile && setDrawerOpen(false)}
+        >
+          <span className="material-icons menu-icon">settings</span>
+          <span className="menu-label">Configuración</span>
+        </Link>
+        <Link
+          to="/help"
+          className="sidebar-footer-link"
+          onClick={() => isMobile && setDrawerOpen(false)}
+        >
+          <span className="material-icons menu-icon">help</span>
+          <span className="menu-label">Ayuda</span>
+        </Link>
+      </div>
     </>
-  );
+);
+
+export default function Layout({ children }: LayoutProps) {
+  const location = useLocation();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isActive = (path: string) => location.pathname === path;
+
+  const mobileMenuItems = menuItems.filter((item) => item.mobilePriority);
 
   return (
     <div className="layout">
       {/* Desktop Sidebar */}
       {!isMobile && (
         <nav className="sidebar">
-          <SidebarContent />
+          <SidebarContent 
+            isActive={isActive}
+            isMobile={isMobile}
+            setDrawerOpen={setDrawerOpen}
+            location={location}
+          />
         </nav>
       )}
 

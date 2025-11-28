@@ -1,40 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productsApi } from '../../api/products.api';
 import Loading from '../../components/common/Loading';
-import ProductCard from '../../components/products/ProductCard';
-import Chip from '../../components/common/Chip';
+import StatusBadge from '../../components/common/StatusBadge';
 import { useToast } from '../../hooks/useToast';
 import { formatCurrency } from '../../utils/formatters';
 import type { CreateProductDto } from '../../types/product.types';
 import './Products.css';
 
-function getStockLevel(stock: number): 'high' | 'medium' | 'low' {
-  if (stock >= 20) return 'high';
-  if (stock >= 5) return 'medium';
-  return 'low';
-}
-
-function getStockVariant(stock: number): 'success' | 'warning' | 'error' {
-  const level = getStockLevel(stock);
-  if (level === 'high') return 'success';
-  if (level === 'medium') return 'warning';
-  return 'error';
-}
-
 export default function Products() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<number | null>(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [filters, setFilters] = useState({
+    category: '',
+    stock: '',
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['products'],
@@ -107,21 +91,93 @@ export default function Products() {
     ? products?.find((p) => p.id === editingProduct)
     : undefined;
 
+  // Filtrar y buscar productos
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+
+    const filtered = products.filter((product) => {
+      // Filtro por stock
+      if (filters.stock) {
+        if (filters.stock === 'in-stock' && product.stock === 0) return false;
+        if (filters.stock === 'low-stock' && (product.stock >= 5 || product.stock === 0)) return false;
+        if (filters.stock === 'out-of-stock' && product.stock > 0) return false;
+      }
+
+      // Búsqueda por referencia o nombre
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesReference = product.reference?.toLowerCase().includes(searchLower);
+        const matchesDescription = product.description?.toLowerCase().includes(searchLower);
+        if (!matchesReference && !matchesDescription) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    return filtered;
+  }, [products, filters, searchTerm]);
+
+  // Paginación
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredProducts, currentPage]);
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+  const handleImportProducts = () => {
+    showToast('Funcionalidad de importación en desarrollo', 'info');
+  };
+
+  const getStockStatus = (stock: number): 'in-stock' | 'low-stock' | 'out-of-stock' => {
+    if (stock === 0) return 'out-of-stock';
+    if (stock < 5) return 'low-stock';
+    return 'in-stock';
+  };
+
+  const getStockLabel = (stock: number): string => {
+    const status = getStockStatus(stock);
+    if (status === 'in-stock') return 'En Stock';
+    if (status === 'low-stock') return 'Stock Bajo';
+    return 'Sin Stock';
+  };
+
+  const stockOptions = [
+    { value: 'in-stock', label: 'En Stock' },
+    { value: 'low-stock', label: 'Stock Bajo' },
+    { value: 'out-of-stock', label: 'Sin Stock' },
+  ];
+
+  // Por ahora, categorías placeholder
+  const categoryOptions = [
+    { value: '', label: 'Todas las categorías' },
+    // Se pueden agregar más cuando se implemente el sistema de categorías
+  ];
+
   if (isLoading) {
     return <Loading />;
   }
 
   return (
     <div className="products-page">
-      <div className="page-header">
-        <h1>Productos</h1>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          <span className="material-icons btn-icon">
-            {showForm ? 'close' : 'add'}
-          </span>
-          {showForm ? 'Cancelar' : 'Nuevo Producto'}
-        </button>
-      </div>
+      <header className="products-header">
+        <div className="products-header-content">
+          <h1>Gestión de Productos</h1>
+          <p className="products-header-subtitle">Añade, edita y gestiona el catálogo de productos de tu tienda.</p>
+        </div>
+        <div className="products-header-actions">
+          <button onClick={handleImportProducts} className="btn-import-products">
+            <span className="material-symbols-outlined">upload</span>
+            <span className="truncate">Importar Productos</span>
+          </button>
+          <button onClick={() => setShowForm(!showForm)} className="btn-add-product">
+            <span className="material-symbols-outlined">add</span>
+            <span className="truncate">{showForm ? 'Cancelar' : 'Añadir Producto'}</span>
+          </button>
+        </div>
+      </header>
 
       {showForm && (
         <ProductForm
@@ -132,82 +188,190 @@ export default function Products() {
         />
       )}
 
-      <div className="products-list">
-        {products && products.length > 0 ? (
-          isMobile ? (
-            <div className="products-grid-mobile">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <div className="products-table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Referencia</th>
-                    <th>Descripción</th>
-                    <th>Precio Venta</th>
-                    <th>Costo</th>
-                    <th>Stock</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((product) => (
-                    <tr key={product.id}>
-                      <td>
-                        <span className="product-reference">{product.reference}</span>
-                      </td>
-                      <td>
-                        <div className="product-description">
-                          <span className="material-icons product-image-icon">inventory_2</span>
-                          <span>{product.description}</span>
-                        </div>
-                      </td>
-                      <td className="product-price-cell">
-                        <strong>{formatCurrency(product.salePrice)}</strong>
-                      </td>
-                      <td>{formatCurrency(product.costPrice)}</td>
-                      <td>
-                        <Chip variant={getStockVariant(product.stock)} size="sm">
-                          {product.stock}
-                        </Chip>
-                      </td>
-                      <td>
-                        <div className="table-actions">
-                          <button
-                            onClick={() => handleEdit(product.id)}
-                            className="btn-icon-edit"
-                            title="Editar"
-                          >
-                            <span className="material-icons">edit</span>
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product)}
-                            className="btn-icon-delete"
-                            title="Eliminar"
-                            disabled={deleteMutation.isPending}
-                          >
-                            <span className="material-icons">delete</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+      {!showForm && (
+        <>
+          <div className="products-filters-container">
+            <div className="products-toolbar">
+              <div className="products-search-wrapper">
+                <div className="products-search-icon">
+                  <span className="material-symbols-outlined">search</span>
+                </div>
+                <input
+                  type="text"
+                  className="products-search-input"
+                  placeholder="Buscar por referencia o nombre..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="products-filters-row">
+                <select
+                  className="products-filter-select"
+                  value={filters.category}
+                  onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                >
+                  <option value="">Categoría</option>
+                  {categoryOptions.filter(opt => opt.value).map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
-                </tbody>
-              </table>
+                </select>
+                <select
+                  className="products-filter-select"
+                  value={filters.stock}
+                  onChange={(e) => setFilters({ ...filters, stock: e.target.value })}
+                >
+                  <option value="">Stock</option>
+                  {stockOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                <button className="products-filter-btn" title="Más filtros">
+                  <span className="material-symbols-outlined">filter_list</span>
+                </button>
+              </div>
             </div>
-          )
-        ) : (
-          <div className="products-empty">
-            <p>No hay productos registrados</p>
-            <button onClick={() => setShowForm(true)} className="btn-primary">
-              Crear primer producto
-            </button>
           </div>
-        )}
-      </div>
+
+          <div className="products-table-wrapper">
+            {filteredProducts.length > 0 ? (
+              <>
+                <div className="products-table-container">
+                  <div className="products-table-overflow">
+                    <table className="products-table">
+                      <thead>
+                        <tr>
+                          <th className="w-16" scope="col">Imagen</th>
+                          <th scope="col">Referencia</th>
+                          <th scope="col">Nombre Producto</th>
+                          <th scope="col">Categoría</th>
+                          <th scope="col">Precio Venta</th>
+                          <th scope="col">Costo</th>
+                          <th scope="col">Stock</th>
+                          <th className="text-right" scope="col">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedProducts.map((product) => {
+                          const stockStatus = getStockStatus(product.stock);
+                          const stockLabel = getStockLabel(product.stock);
+                          const stockVariant = stockStatus === 'in-stock' ? 'success' : stockStatus === 'low-stock' ? 'warning' : 'error';
+                          return (
+                            <tr key={product.id}>
+                              <td>
+                                <div className="product-image-cell">
+                                  <span className="material-symbols-outlined">image</span>
+                                </div>
+                              </td>
+                              <td className="product-reference-cell">{product.reference}</td>
+                              <th className="product-name-cell" scope="row">{product.description}</th>
+                              <td className="product-category-cell">-</td>
+                              <td className="product-price-cell">{formatCurrency(product.salePrice)}</td>
+                              <td className="product-cost-cell">{formatCurrency(product.costPrice)}</td>
+                              <td>
+                                <div className="product-stock-cell">
+                                  <StatusBadge variant={stockVariant as 'success' | 'warning' | 'error'}>
+                                    {stockLabel}
+                                  </StatusBadge>
+                                  <span className="stock-quantity">{Math.floor(product.stock)} unidades</span>
+                                </div>
+                              </td>
+                              <td className="text-right">
+                                <div className="products-table-actions">
+                                  <button
+                                    onClick={() => handleEdit(product.id)}
+                                    className="products-action-btn"
+                                    title="Editar"
+                                  >
+                                    <span className="material-symbols-outlined">edit</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(product)}
+                                    className="products-action-btn"
+                                    title="Eliminar"
+                                    disabled={deleteMutation.isPending}
+                                  >
+                                    <span className="material-symbols-outlined">delete</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <nav className="products-pagination" aria-label="Table navigation">
+                  <span className="products-pagination-info">
+                    Mostrando <span className="font-semibold">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredProducts.length)}</span> de <span className="font-semibold">{filteredProducts.length}</span>
+                  </span>
+                  <div className="products-pagination-controls">
+                    <button
+                      className="products-pagination-btn"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <span className="material-symbols-outlined">chevron_left</span>
+                    </button>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`products-pagination-number ${currentPage === pageNum ? 'active' : ''}`}
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    {totalPages > 5 && currentPage < totalPages - 2 && (
+                      <span className="products-pagination-ellipsis">...</span>
+                    )}
+                    {totalPages > 5 && currentPage < totalPages - 2 && (
+                      <button
+                        className="products-pagination-number"
+                        onClick={() => setCurrentPage(totalPages)}
+                      >
+                        {totalPages}
+                      </button>
+                    )}
+                    <button
+                      className="products-pagination-btn"
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <span className="material-symbols-outlined">chevron_right</span>
+                    </button>
+                  </div>
+                </nav>
+              </>
+            ) : (
+              <div className="products-empty">
+                <p>
+                  {searchTerm || filters.category || filters.stock
+                    ? 'No se encontraron productos con los filtros aplicados'
+                    : 'No hay productos registrados'}
+                </p>
+                {!searchTerm && !filters.category && !filters.stock && (
+                  <button onClick={() => setShowForm(true)} className="btn-primary">
+                    Crear primer producto
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

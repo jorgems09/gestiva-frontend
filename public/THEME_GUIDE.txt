@@ -1,0 +1,52 @@
+╔════════════════════════════════════════════════════════════════════╗
+║           SISTEMA DE PERSONALIZACIÓN DE TEMAS - GESTIVA           ║
+║                        Guía de Uso Rápido                          ║
+╚════════════════════════════════════════════════════════════════════╝
+
+🎨 TEMAS DISPONIBLES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. AZUL PROFESIONAL (Por defecto)
+   Color: #2b6cee - Moderno y profesional
+   
+2. VERDE FRESCO
+   Color: #27AE60 - Inspirado en la naturaleza
+   
+3. MORADO ELEGANTE
+   Color: #8e44ad - Sofisticado y moderno
+   
+4. NARANJA ENERGÍA
+   Color: #F39C12 - Vibrante y dinámico
+   
+5. MODO OSCURO
+   Color: #4d7ef0 - Reduce fatiga visual
+   
+6. ROSA SUAVE
+   Color: #E6C0C8 - Delicado y elegante
+
+
+📍 CÓMO CAMBIAR EL TEMA:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Paso 1: Click en el icono ⚙️ "Configuración" en el sidebar
+Paso 2: Selecciona la tab "Apariencia"
+Paso 3: Click en cualquier tarjeta de tema
+Paso 4: ¡Listo! El cambio es inmediato
+
+
+💾 PERSISTENCIA:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ El tema se guarda automáticamente
+✓ Persiste al cerrar/abrir el navegador
+✓ Funciona en todos los dispositivos del mismo navegador
+
+
+🔧 SOPORTE TÉCNICO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Implementado: Noviembre 2025
+- Versión: 1.0.0
+- Compatible con: Chrome, Firefox, Safari, Edge
+- Responsive: Sí (móvil y desktop)
+

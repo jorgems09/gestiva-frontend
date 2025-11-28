@@ -73,48 +73,64 @@
   border-top: 1px solid var(--color-border);
 }
 
-/* Tablas - Material Design */
+/* Tablas - Matching Design */
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--elevation-1);
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+  font-size: 0.875rem; /* text-sm */
+  text-align: left;
+  color: #6b7280; /* text-slate-500 */
 }
 
 .data-table th,
 .data-table td {
-  padding: var(--spacing-md);
+  padding: 0.75rem 1.5rem; /* px-6 py-3 for th, px-6 py-4 for td */
   text-align: left;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 1px solid #e5e7eb; /* border-slate-300 */
 }
 
 .data-table th {
-  background: var(--color-primary);
-  color: var(--color-text-on-primary);
-  font-weight: var(--font-weight-medium);
-  font-size: 0.875rem;
+  background: #f9fafb !important; /* bg-slate-50 */
+  color: #374151 !important; /* text-slate-700 */
+  font-weight: 500;
+  font-size: 0.75rem !important; /* text-xs */
   text-transform: uppercase;
-  letter-spacing: 0.0178571429em;
+  letter-spacing: 0.05em;
   font-family: var(--font-primary);
+  padding: 0.75rem 1.5rem; /* px-6 py-3 */
 }
 
 .data-table tbody tr {
-  transition: background-color var(--transition-fast);
+  background: #ffffff; /* bg-white */
+  border-bottom: 1px solid #1f2937; /* dark:border-slate-800 */
+  transition: background-color 0.2s ease;
   cursor: pointer;
 }
 
 .data-table tbody tr:hover {
-  background-color: var(--color-surface-hover);
+  background-color: #f9fafb; /* hover:bg-slate-50 */
 }
 
 .data-table tbody tr:active {
-  background-color: var(--color-surface-hover);
+  background-color: #f9fafb;
 }
 
 .data-table tbody tr:last-child td {
-  border-bottom: none;
+  border-bottom: 1px solid #1f2937;
+}
+
+.data-table td {
+  padding: 1rem 1.5rem; /* px-6 py-4 */
+  color: #374151; /* text-gray-900 dark:text-white */
+}
+
+.data-table td.font-medium {
+  font-weight: 500;
+  color: #111827; /* text-gray-900 dark:text-white */
 }
 
 /* Cards - Material Design */

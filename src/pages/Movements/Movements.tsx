@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { movementsApi } from '../../api/movements.api';
 import { clientsApi } from '../../api/clients.api';
@@ -7,15 +7,39 @@ import { productsApi } from '../../api/products.api';
 import { reportsApi } from '../../api/reports.api';
 import Loading from '../../components/common/Loading';
 import SearchableSelect from '../../components/common/SearchableSelect';
+import FilterDropdown from '../../components/common/FilterDropdown';
+import DateRangePicker from '../../components/common/DateRangePicker';
+import Pagination from '../../components/common/Pagination';
+import StatusBadge from '../../components/common/StatusBadge';
 import { useToast } from '../../hooks/useToast';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { ProcessType, PROCESS_TYPE_LABELS } from '../../constants/process-types';
-import type { CreateMovementDto, MovementDetail, PaymentDetail, RelatedAccountDto } from '../../types/movement.types';
+import type { CreateMovementDto, MovementDetail, PaymentDetail, RelatedAccountDto, MovementHeader } from '../../types/movement.types';
 import './Movements.css';
 
 export default function Movements() {
   const [showForm, setShowForm] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+  const [selectedMovement, setSelectedMovement] = useState<MovementHeader | null>(null);
+  const [filters, setFilters] = useState({
+    processType: '',
+    dateRange: null as { from: string; to: string } | null,
+    thirdParty: '',
+    status: '',
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const queryClient = useQueryClient();
+
+  // Escuchar evento del botón del sidebar
+  useEffect(() => {
+    const handleOpenForm = () => {
+      setShowForm(true);
+    };
+    window.addEventListener('open-movement-form', handleOpenForm);
+    return () => window.removeEventListener('open-movement-form', handleOpenForm);
+  }, []);
 
   const { data: movements, isLoading } = useQuery({
     queryKey: ['movements'],
@@ -49,7 +73,17 @@ export default function Movements() {
     },
   });
 
-  const handleCancel = (movement: import('../../types/movement.types').MovementHeader) => {
+  const { data: clients } = useQuery({
+    queryKey: ['clients'],
+    queryFn: () => clientsApi.getAll().then((res) => res.data),
+  });
+
+  const { data: suppliers } = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: () => suppliersApi.getAll().then((res) => res.data),
+  });
+
+  const handleCancel = (movement: MovementHeader) => {
     const isAnulacion = movement.consecutive?.startsWith('ANL-');
     const isAnulado = movement.status === 0;
     
@@ -72,21 +106,530 @@ export default function Movements() {
     }
   };
 
+  // Función para determinar el estado de pago
+  const getPaymentStatus = (movement: MovementHeader): 'paid' | 'pending' | 'overdue' | 'cancelled' => {
+    if (movement.status === 0 || movement.consecutive?.startsWith('ANL-')) {
+      return 'cancelled';
+    }
+    
+    // Lógica simplificada: si el total de pagos >= total, está pagado
+    const paymentsTotal = movement.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+    if (paymentsTotal >= movement.total) {
+      return 'paid';
+    }
+    
+    // Si hay fecha de vencimiento y está vencida, está vencido
+    // Por ahora, asumimos que si no está pagado completamente, está pendiente
+    return 'pending';
+  };
+
+  // Filtrar y buscar movimientos
+  const filteredMovements = useMemo(() => {
+    if (!movements) return [];
+
+    const filtered = movements.filter((movement) => {
+      // Filtro por tipo
+      if (filters.processType && movement.processType !== filters.processType) {
+        return false;
+      }
+
+      // Filtro por rango de fechas
+      if (filters.dateRange) {
+        const movementDate = new Date(movement.documentDate);
+        const fromDate = new Date(filters.dateRange.from);
+        const toDate = new Date(filters.dateRange.to);
+        if (movementDate < fromDate || movementDate > toDate) {
+          return false;
+        }
+      }
+
+      // Filtro por tercero (cliente/proveedor)
+      if (filters.thirdParty) {
+        const clientMatch = movement.client?.code === filters.thirdParty;
+        const supplierMatch = movement.supplier?.code === filters.thirdParty;
+        if (!clientMatch && !supplierMatch) {
+          return false;
+        }
+      }
+
+      // Filtro por estado
+      if (filters.status) {
+        const status = getPaymentStatus(movement);
+        if (status !== filters.status) {
+          return false;
+        }
+      }
+
+      // Búsqueda por consecutivo o palabra clave
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesConsecutive = movement.consecutive?.toLowerCase().includes(searchLower);
+        const matchesClient = movement.client?.name?.toLowerCase().includes(searchLower);
+        const matchesSupplier = movement.supplier?.name?.toLowerCase().includes(searchLower);
+        const matchesType = PROCESS_TYPE_LABELS[movement.processType as ProcessType]?.toLowerCase().includes(searchLower);
+        
+        if (!matchesConsecutive && !matchesClient && !matchesSupplier && !matchesType) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    return filtered;
+  }, [movements, filters, searchTerm]);
+
+  // Paginación
+  const paginatedMovements = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredMovements.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredMovements, currentPage]);
+
+  const totalPages = Math.ceil(filteredMovements.length / itemsPerPage);
+
+  const handleClearFilters = () => {
+    setFilters({
+      processType: '',
+      dateRange: null,
+      thirdParty: '',
+      status: '',
+    });
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  const handleApplyFilters = () => {
+    setCurrentPage(1);
+  };
+
+  const handleExport = () => {
+    showToast('Funcionalidad de exportación en desarrollo', 'info');
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleViewMovement = (movement: MovementHeader) => {
+    setSelectedMovement(movement);
+    setShowDetail(true);
+  };
+
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setSelectedMovement(null);
+  };
+
   if (isLoading) {
     return <Loading />;
   }
 
+  // Opciones para filtros
+  const processTypeOptions = Object.entries(PROCESS_TYPE_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  }));
+
+  const thirdPartyOptions = [
+    ...(clients?.map((c) => ({ value: c.code, label: `${c.code} - ${c.name}` })) || []),
+    ...(suppliers?.map((s) => ({ value: s.code, label: `${s.code} - ${s.name}` })) || []),
+  ];
+
+  const statusOptions = [
+    { value: 'paid', label: 'Pagado' },
+    { value: 'pending', label: 'Pendiente' },
+    { value: 'overdue', label: 'Vencido' },
+    { value: 'cancelled', label: 'Anulado' },
+  ];
+
   return (
     <div className="movements-page">
-      <div className="page-header">
-        <h1>Movimientos</h1>
+      {/* Modal de Detalle */}
+      {showDetail && selectedMovement && (
+        <div className="modal-overlay" onClick={handleCloseDetail}>
+          <div className="modal-content movement-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2>Detalle del Movimiento</h2>
+                <p className="modal-subtitle">{selectedMovement.consecutive}</p>
+              </div>
+              <button className="btn-close-modal" onClick={handleCloseDetail}>
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Información General */}
+              <div className="detail-section">
+                <h3>Información General</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">Consecutivo:</span>
+                    <span className="detail-value">{selectedMovement.consecutive}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Tipo de Proceso:</span>
+                    <span className="detail-value">
+                      {PROCESS_TYPE_LABELS[selectedMovement.processType as ProcessType]}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Fecha:</span>
+                    <span className="detail-value">{formatDate(selectedMovement.documentDate)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Estado:</span>
+                    <span className="detail-value">
+                      <StatusBadge
+                        variant={getPaymentStatus(selectedMovement) === 'paid' ? 'success' : 'warning'}
+                        label={getPaymentStatus(selectedMovement) === 'paid' ? 'Pagado' : 'Pendiente'}
+                      />
+                    </span>
+                  </div>
+                  {(selectedMovement.processType === ProcessType.SALE ||
+                    selectedMovement.processType === ProcessType.RECEIPT) &&
+                    selectedMovement.client && (
+                      <div className="detail-item">
+                        <span className="detail-label">Cliente:</span>
+                        <span className="detail-value">
+                          {selectedMovement.client.code} - {selectedMovement.client.name}
+                        </span>
+                      </div>
+                    )}
+                  {(selectedMovement.processType === ProcessType.PURCHASE ||
+                    selectedMovement.processType === ProcessType.EXPENSE) &&
+                    (selectedMovement.supplier || selectedMovement.supplierName) && (
+                      <div className="detail-item">
+                        <span className="detail-label">Proveedor:</span>
+                        <span className="detail-value">
+                          {selectedMovement.supplier
+                            ? `${selectedMovement.supplier.code} - ${selectedMovement.supplier.name}`
+                            : selectedMovement.supplierName}
+                        </span>
+                      </div>
+                    )}
+                  {selectedMovement.notes && (
+                    <div className="detail-item full-width">
+                      <span className="detail-label">Notas:</span>
+                      <span className="detail-value">{selectedMovement.notes}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Detalles de Productos */}
+              {selectedMovement.details && selectedMovement.details.length > 0 && (
+                <div className="detail-section">
+                  <h3>Productos / Servicios</h3>
+                  <div className="detail-table-container">
+                    <table className="detail-table">
+                      <thead>
+                        <tr>
+                          <th>Producto</th>
+                          <th className="text-right">Cantidad</th>
+                          <th className="text-right">Precio Unit.</th>
+                          <th className="text-right">Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedMovement.details.map((detail, index) => (
+                          <tr key={index}>
+                            <td>
+                              <div className="product-detail">
+                                <span className="product-ref">{detail.productReference}</span>
+                                <span className="product-desc">{detail.description}</span>
+                              </div>
+                            </td>
+                            <td className="text-right">{detail.quantity}</td>
+                            <td className="text-right">{formatCurrency(detail.unitPrice)}</td>
+                            <td className="text-right font-semibold">
+                              {formatCurrency(detail.quantity * detail.unitPrice)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Pagos */}
+              {selectedMovement.payments && selectedMovement.payments.length > 0 && (
+                <div className="detail-section">
+                  <h3>Pagos</h3>
+                  <div className="detail-table-container">
+                    <table className="detail-table">
+                      <thead>
+                        <tr>
+                          <th>Método de Pago</th>
+                          <th className="text-right">Monto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedMovement.payments.map((payment, index) => (
+                          <tr key={index}>
+                            <td>{payment.method}</td>
+                            <td className="text-right font-semibold">
+                              {formatCurrency(payment.amount)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Totales */}
+              <div className="detail-section">
+                <h3>Totales</h3>
+                <div className="totals-grid">
+                  <div className="total-item">
+                    <span className="total-label">Subtotal:</span>
+                    <span className="total-value">{formatCurrency(selectedMovement.subtotal)}</span>
+                  </div>
+                  {selectedMovement.taxTotal > 0 && (
+                    <div className="total-item">
+                      <span className="total-label">Impuestos:</span>
+                      <span className="total-value">{formatCurrency(selectedMovement.taxTotal)}</span>
+                    </div>
+                  )}
+                  {selectedMovement.retentionTotal > 0 && (
+                    <div className="total-item">
+                      <span className="total-label">Retención:</span>
+                      <span className="total-value text-red">
+                        -{formatCurrency(selectedMovement.retentionTotal)}
+                      </span>
+                    </div>
+                  )}
+                  {selectedMovement.deductionTotal > 0 && (
+                    <div className="total-item">
+                      <span className="total-label">Deducción:</span>
+                      <span className="total-value text-red">
+                        -{formatCurrency(selectedMovement.deductionTotal)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="total-item total-final">
+                    <span className="total-label">Total:</span>
+                    <span className="total-value">{formatCurrency(selectedMovement.total)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={handleCloseDetail}>
+                Cerrar
+              </button>
+              <button className="btn-primary" onClick={() => window.print()}>
+                <span className="material-icons btn-icon">print</span>
+                Imprimir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="page-header-new">
+        <div className="page-header-content">
+          <h1>Gestión de Movimientos</h1>
+          <p className="page-subtitle">Registra y gestiona todas tus transacciones.</p>
+        </div>
         <button onClick={() => setShowForm(!showForm)} className="btn-primary">
           <span className="material-icons btn-icon">
-            {showForm ? 'close' : 'add_shopping_cart'}
+            {showForm ? 'close' : 'add'}
           </span>
           {showForm ? 'Cancelar' : 'Nuevo Movimiento'}
         </button>
       </div>
+
+      {/* Modal de Detalle */}
+      {showDetail && selectedMovement && (
+        <div className="modal-overlay" onClick={handleCloseDetail}>
+          <div className="modal-content movement-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2>Detalle del Movimiento</h2>
+                <p className="modal-subtitle">{selectedMovement.consecutive}</p>
+              </div>
+              <button className="btn-close-modal" onClick={handleCloseDetail}>
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Información General */}
+              <div className="detail-section">
+                <h3>Información General</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">Consecutivo:</span>
+                    <span className="detail-value">{selectedMovement.consecutive}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Tipo de Proceso:</span>
+                    <span className="detail-value">
+                      {PROCESS_TYPE_LABELS[selectedMovement.processType as ProcessType]}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Fecha:</span>
+                    <span className="detail-value">{formatDate(selectedMovement.documentDate)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Estado:</span>
+                    <span className="detail-value">
+                      <StatusBadge
+                        variant={getPaymentStatus(selectedMovement) === 'paid' ? 'success' : 'warning'}
+                        label={getPaymentStatus(selectedMovement) === 'paid' ? 'Pagado' : 'Pendiente'}
+                      />
+                    </span>
+                  </div>
+                  {(selectedMovement.processType === ProcessType.SALE ||
+                    selectedMovement.processType === ProcessType.RECEIPT) &&
+                    selectedMovement.client && (
+                      <div className="detail-item">
+                        <span className="detail-label">Cliente:</span>
+                        <span className="detail-value">
+                          {selectedMovement.client.code} - {selectedMovement.client.name}
+                        </span>
+                      </div>
+                    )}
+                  {(selectedMovement.processType === ProcessType.PURCHASE ||
+                    selectedMovement.processType === ProcessType.EXPENSE) &&
+                    (selectedMovement.supplier || selectedMovement.supplierName) && (
+                      <div className="detail-item">
+                        <span className="detail-label">Proveedor:</span>
+                        <span className="detail-value">
+                          {selectedMovement.supplier
+                            ? `${selectedMovement.supplier.code} - ${selectedMovement.supplier.name}`
+                            : selectedMovement.supplierName}
+                        </span>
+                      </div>
+                    )}
+                  {selectedMovement.notes && (
+                    <div className="detail-item full-width">
+                      <span className="detail-label">Notas:</span>
+                      <span className="detail-value">{selectedMovement.notes}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Detalles de Productos */}
+              {selectedMovement.details && selectedMovement.details.length > 0 && (
+                <div className="detail-section">
+                  <h3>Productos / Servicios</h3>
+                  <div className="detail-table-container">
+                    <table className="detail-table">
+                      <thead>
+                        <tr>
+                          <th>Producto</th>
+                          <th className="text-right">Cantidad</th>
+                          <th className="text-right">Precio Unit.</th>
+                          <th className="text-right">Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedMovement.details.map((detail, index) => (
+                          <tr key={index}>
+                            <td>
+                              <div className="product-detail">
+                                <span className="product-ref">{detail.productReference}</span>
+                                <span className="product-desc">{detail.description}</span>
+                              </div>
+                            </td>
+                            <td className="text-right">{detail.quantity}</td>
+                            <td className="text-right">{formatCurrency(detail.unitPrice)}</td>
+                            <td className="text-right font-semibold">
+                              {formatCurrency(detail.quantity * detail.unitPrice)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Pagos */}
+              {selectedMovement.payments && selectedMovement.payments.length > 0 && (
+                <div className="detail-section">
+                  <h3>Pagos</h3>
+                  <div className="detail-table-container">
+                    <table className="detail-table">
+                      <thead>
+                        <tr>
+                          <th>Método de Pago</th>
+                          <th className="text-right">Monto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedMovement.payments.map((payment, index) => (
+                          <tr key={index}>
+                            <td>{payment.method}</td>
+                            <td className="text-right font-semibold">
+                              {formatCurrency(payment.amount)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Totales */}
+              <div className="detail-section">
+                <h3>Totales</h3>
+                <div className="totals-grid">
+                  <div className="total-item">
+                    <span className="total-label">Subtotal:</span>
+                    <span className="total-value">{formatCurrency(selectedMovement.subtotal)}</span>
+                  </div>
+                  {selectedMovement.taxTotal > 0 && (
+                    <div className="total-item">
+                      <span className="total-label">Impuestos:</span>
+                      <span className="total-value">{formatCurrency(selectedMovement.taxTotal)}</span>
+                    </div>
+                  )}
+                  {selectedMovement.retentionTotal > 0 && (
+                    <div className="total-item">
+                      <span className="total-label">Retención:</span>
+                      <span className="total-value text-red">
+                        -{formatCurrency(selectedMovement.retentionTotal)}
+                      </span>
+                    </div>
+                  )}
+                  {selectedMovement.deductionTotal > 0 && (
+                    <div className="total-item">
+                      <span className="total-label">Deducción:</span>
+                      <span className="total-value text-red">
+                        -{formatCurrency(selectedMovement.deductionTotal)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="total-item total-final">
+                    <span className="total-label">Total:</span>
+                    <span className="total-value">{formatCurrency(selectedMovement.total)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={handleCloseDetail}>
+                Cerrar
+              </button>
+              <button className="btn-primary" onClick={() => window.print()}>
+                <span className="material-icons btn-icon">print</span>
+                Imprimir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <MovementForm
@@ -96,110 +639,156 @@ export default function Movements() {
         />
       )}
 
-      <div className="movements-list">
-        {movements && movements.length > 0 ? (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Consecutivo</th>
-                <th>Tipo</th>
-                <th>Fecha</th>
-                <th>Cliente/Proveedor</th>
-                <th>Subtotal</th>
-                <th>IVA</th>
-                <th>Total</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {movements.map((movement) => {
-                const isAnulacion = movement.consecutive?.startsWith('ANL-');
-                const isAnulado = movement.status === 0;
-                const canCancel = !isAnulacion && !isAnulado;
+      {!showForm && (
+        <>
+          <div className="movements-filters">
+            <div className="filters-row">
+              <FilterDropdown
+                options={processTypeOptions}
+                value={filters.processType}
+                onChange={(value) => setFilters({ ...filters, processType: value })}
+                placeholder="Tipo de Movimiento"
+              />
+              <DateRangePicker
+                value={filters.dateRange || undefined}
+                onChange={(range) => setFilters({ ...filters, dateRange: range || null })}
+                placeholder="Rango de Fechas"
+              />
+              <SearchableSelect
+                options={thirdPartyOptions}
+                value={filters.thirdParty}
+                onChange={(value) => setFilters({ ...filters, thirdParty: value })}
+                placeholder="Cliente/Proveedor"
+                searchPlaceholder="Buscar cliente o proveedor..."
+              />
+              <FilterDropdown
+                options={statusOptions}
+                value={filters.status}
+                onChange={(value) => setFilters({ ...filters, status: value })}
+                placeholder="Estado"
+              />
+            </div>
+            <div className="search-row">
+              <div className="search-input-wrapper">
+                <span className="material-icons search-icon">search</span>
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="Buscar por Consecutivo o palabra clave..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="filter-actions">
+                <button className="btn-secondary" onClick={handleClearFilters}>
+                  Limpiar
+                </button>
+                <button className="btn-primary" onClick={handleApplyFilters}>
+                  <span className="material-icons btn-icon">filter_list</span>
+                  Aplicar Filtros
+                </button>
+              </div>
+            </div>
+          </div>
 
-                return (
-                  <tr key={movement.id} className={isAnulado ? 'row-anulado' : ''}>
-                    <td>
-                      {isAnulacion && (
-                        <span className="material-icons anulacion-icon" title="Movimiento de anulación">
-                          cancel
-                        </span>
-                      )}
-                      {movement.consecutive}
-                    </td>
-                    <td>{PROCESS_TYPE_LABELS[movement.processType as ProcessType] || movement.processType}</td>
-                    <td>{formatDate(movement.documentDate)}</td>
-                    <td>
-                      {(() => {
-                        // Para compras y gastos, mostrar proveedor
-                        if (
-                          movement.processType === ProcessType.PURCHASE ||
-                          movement.processType === ProcessType.EXPENSE
-                        ) {
-                          return movement.supplier?.name || movement.supplierName || '-';
-                        }
-                        // Para ventas y recibos, mostrar cliente
-                        if (
-                          movement.processType === ProcessType.SALE ||
-                          movement.processType === ProcessType.RECEIPT
-                        ) {
-                          return movement.client?.name || '-';
-                        }
-                        // Para otros tipos, intentar ambos
-                        return movement.client?.name || movement.supplier?.name || movement.supplierName || '-';
-                      })()}
-                    </td>
-                    <td>{formatCurrency(movement.subtotal)}</td>
-                    <td>{formatCurrency(movement.taxTotal)}</td>
-                    <td>
-                      <strong>{formatCurrency(movement.total)}</strong>
-                    </td>
-                    <td>
-                      <span
-                        className={`status-badge ${
-                          isAnulado
-                            ? 'cancelled'
-                            : movement.status === 1
-                            ? 'active'
-                            : 'inactive'
-                        }`}
-                      >
-                        {isAnulado
-                          ? 'Anulado'
-                          : isAnulacion
-                          ? 'Anulación'
-                          : movement.status === 1
-                          ? 'Activo'
-                          : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td>
-                      {canCancel && (
-                        <button
-                          onClick={() => handleCancel(movement)}
-                          className="btn-icon-cancel"
-                          title="Anular movimiento"
-                          disabled={cancelMutation.isPending}
-                        >
-                          <span className="material-icons">block</span>
-                        </button>
-                      )}
-                      {isAnulacion && (
-                        <span className="material-icons info-icon" title="Este es un movimiento de anulación">
-                          info
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        ) : (
-          <p>No hay movimientos registrados</p>
-        )}
-      </div>
+          <div className="movements-list">
+            <div className="movements-list-header">
+              <h3>Movimientos Recientes</h3>
+              <div className="movements-list-actions">
+                <button className="btn-icon-action" onClick={handleExport} title="Exportar">
+                  <span className="material-icons">arrow_upward</span>
+                </button>
+                <button className="btn-icon-action" onClick={handlePrint} title="Imprimir">
+                  <span className="material-icons">description</span>
+                </button>
+              </div>
+            </div>
+            {filteredMovements.length > 0 ? (
+              <>
+                <table className="data-table movements-table-new">
+                  <thead>
+                    <tr>
+                      <th>CONSECUTIVO</th>
+                      <th>FECHA</th>
+                      <th>TIPO</th>
+                      <th>CLIENTE/PROVEEDOR</th>
+                      <th>TOTAL</th>
+                      <th>ESTADO</th>
+                      <th>ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedMovements.map((movement) => {
+                      const paymentStatus = getPaymentStatus(movement);
+                      const thirdPartyName =
+                        movement.processType === ProcessType.PURCHASE ||
+                        movement.processType === ProcessType.EXPENSE
+                          ? movement.supplier?.name || movement.supplierName || '-'
+                          : movement.processType === ProcessType.SALE ||
+                            movement.processType === ProcessType.RECEIPT
+                          ? movement.client?.name || '-'
+                          : movement.client?.name || movement.supplier?.name || movement.supplierName || '-';
+
+                      return (
+                        <tr key={movement.id}>
+                          <td>
+                            <strong>{movement.consecutive}</strong>
+                          </td>
+                          <td>{formatDate(movement.documentDate)}</td>
+                          <td>{PROCESS_TYPE_LABELS[movement.processType as ProcessType] || movement.processType}</td>
+                          <td>{thirdPartyName}</td>
+                          <td>
+                            <strong>{formatCurrency(movement.total)}</strong>
+                          </td>
+                          <td>
+                            <StatusBadge status={paymentStatus} />
+                          </td>
+                          <td>
+                            <div className="table-actions">
+                              <button
+                                className="btn-link-action"
+                                onClick={() => handleViewMovement(movement)}
+                                title="Ver detalles"
+                              >
+                                Ver
+                              </button>
+                              {paymentStatus !== 'cancelled' && !movement.consecutive?.startsWith('ANL-') && (
+                                <button
+                                  onClick={() => handleCancel(movement)}
+                                  className="btn-icon-cancel"
+                                  title="Anular movimiento"
+                                  disabled={cancelMutation.isPending}
+                                >
+                                  <span className="material-icons">block</span>
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={filteredMovements.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
+              </>
+            ) : (
+              <div className="empty-state">
+                <p>
+                  {searchTerm || Object.values(filters).some((v) => v !== '' && v !== null)
+                    ? 'No se encontraron movimientos con los filtros aplicados'
+                    : 'No hay movimientos registrados'}
+                </p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -560,139 +1149,172 @@ function MovementForm({
   const needsSupplier = processType === ProcessType.PURCHASE || processType === ProcessType.EXPENSE;
 
   return (
-    <form onSubmit={handleSubmit} className="movement-form">
-      <div className="form-section">
-        <h3>Información General</h3>
-        <div className="form-row">
-          <div className="form-group">
-            <label>Tipo de Proceso *</label>
-            <select
-              value={processType}
-              onChange={(e) => setProcessType(e.target.value as ProcessType)}
-              required
-            >
-              {Object.entries(PROCESS_TYPE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
+    <div className="form-fullscreen">
+      {/* Sticky Header */}
+      <header className="form-header-sticky">
+        <div className="form-header-left">
+          <div className="form-header-logo">
+            <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 7.27094L4 42.4379Z" fill="currentColor"/>
+            </svg>
           </div>
-          <div className="form-group">
-            <label>Fecha del Documento *</label>
-            <input
-              type="date"
-              value={documentDate}
-              onChange={(e) => setDocumentDate(e.target.value)}
-              required
-            />
+          <h2 className="form-header-title">ERP System</h2>
+        </div>
+        <div className="form-header-right">
+          <button type="button" onClick={onCancel} className="btn-header-cancel" disabled={isLoading}>
+            Cancelar
+          </button>
+          <button type="submit" form="movement-form-id" className="btn-header-save" disabled={isLoading}>
+            {isLoading ? 'Guardando...' : 'Guardar Movimiento'}
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <form id="movement-form-id" onSubmit={handleSubmit} className="form-main-content">
+        {/* Page Header */}
+        <div className="form-page-header">
+          <div className="form-page-header-left">
+            <h1 className="form-page-title">Registrar Nuevo Movimiento</h1>
+            <p className="form-page-subtitle">Seleccione el tipo de proceso y complete los campos requeridos.</p>
+          </div>
+          <div className="form-page-header-right">
+            <div className="form-group-inline">
+              <label htmlFor="processType">Tipo de Proceso</label>
+              <select
+                id="processType"
+                value={processType}
+                onChange={(e) => setProcessType(e.target.value as ProcessType)}
+                className="process-type-select"
+                required
+              >
+                {Object.entries(PROCESS_TYPE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
-        {needsClient && (
-          <div className="form-group">
-            <label>Cliente {processType === ProcessType.RECEIPT && <span className="required">*</span>}</label>
-            <SearchableSelect
-              options={
-                clients?.map((c) => ({
-                  value: c.code,
-                  label: `${c.code} - ${c.name}`,
-                })) || []
-              }
-              value={clientCode}
-              onChange={setClientCode}
-              placeholder="Buscar cliente por código o nombre..."
-              searchPlaceholder="Escriba para buscar..."
-            />
-            {processType === ProcessType.RECEIPT && receivablesData && (
-              <div className="receivables-info">
-                <span className="material-icons info-icon">info</span>
-                <span>
-                  Saldo total: <strong>{formatCurrency(receivablesData.balance)}</strong> |{' '}
-                  {receivablesData.items.length} cuenta(s) pendiente(s)
-                </span>
+        {/* Grid Layout: Main + Sidebar */}
+        <div className="form-grid-layout">
+          {/* Left Column (Main) */}
+          <div className="form-main-column">
+            {/* Información General Card */}
+            <div className="form-card">
+              <h2 className="form-card-title">Información General</h2>
+              <div className="form-grid-2col">
+                <div className="form-group">
+                  <label>Fecha del Movimiento</label>
+                  <input
+                    type="date"
+                    value={documentDate}
+                    onChange={(e) => setDocumentDate(e.target.value)}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                {needsClient && (
+                  <div className="form-group">
+                    <label>Cliente {processType === ProcessType.RECEIPT && <span className="required">*</span>}</label>
+                    <SearchableSelect
+                      options={
+                        clients?.map((c) => ({
+                          value: c.code,
+                          label: `${c.code} - ${c.name}`,
+                        })) || []
+                      }
+                      value={clientCode}
+                      onChange={setClientCode}
+                      placeholder="Buscar cliente..."
+                      searchPlaceholder="Escriba para buscar..."
+                    />
+                    {processType === ProcessType.RECEIPT && receivablesData && (
+                      <div className="receivables-info">
+                        <span className="material-icons info-icon">info</span>
+                        <span>
+                          Saldo total: <strong>{formatCurrency(receivablesData.balance)}</strong> |{' '}
+                          {receivablesData.items.length} cuenta(s) pendiente(s)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {needsSupplier && (
+                  <div className="form-group">
+                    <label>Proveedor</label>
+                    <SearchableSelect
+                      options={
+                        suppliers?.map((s) => ({
+                          value: s.code,
+                          label: `${s.code} - ${s.name}`,
+                        })) || []
+                      }
+                      value={supplierCode}
+                      onChange={setSupplierCode}
+                      placeholder="Buscar proveedor..."
+                      searchPlaceholder="Escriba para buscar..."
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
 
-        {needsSupplier && (
-          <div className="form-group">
-            <label>Proveedor</label>
-            <SearchableSelect
-              options={
-                suppliers?.map((s) => ({
-                  value: s.code,
-                  label: `${s.code} - ${s.name}`,
-                })) || []
-              }
-              value={supplierCode}
-              onChange={setSupplierCode}
-              placeholder="Buscar proveedor por código o nombre..."
-              searchPlaceholder="Escriba para buscar..."
-            />
-          </div>
-        )}
-
-        <div className="form-group">
-          <label>Notas</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-          />
-        </div>
-
-        {processType === ProcessType.PURCHASE && (
-          <div className="form-row">
-            <div className="form-group">
-              <label>% Retención</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                value={retentionRate !== undefined ? retentionRate : ''}
-                onChange={(e) => {
-                  const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                  setRetentionRate(value !== undefined && !isNaN(value) ? value : undefined);
-                }}
-                placeholder="2.5 (default)"
-              />
-              <small className="form-hint">Deje vacío para usar 2.5% (default) o ingrese 0 para sin retención</small>
+              {processType === ProcessType.PURCHASE && (
+                <div className="form-grid-2col">
+                  <div className="form-group">
+                    <label>% Retención</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={retentionRate !== undefined ? retentionRate : ''}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                        setRetentionRate(value !== undefined && !isNaN(value) ? value : undefined);
+                      }}
+                      placeholder="2.5 (default)"
+                      className="form-input"
+                    />
+                    <small className="form-hint">Deje vacío para usar 2.5% (default) o ingrese 0 para sin retención</small>
+                  </div>
+                  <div className="form-group">
+                    <label>% Deducción</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={deductionRate !== undefined ? deductionRate : ''}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                        setDeductionRate(value !== undefined && !isNaN(value) ? value : undefined);
+                      }}
+                      placeholder="1.0 (default)"
+                      className="form-input"
+                    />
+                    <small className="form-hint">Deje vacío para usar 1% (default) o ingrese 0 para sin deducción</small>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="form-group">
-              <label>% Deducción</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                value={deductionRate !== undefined ? deductionRate : ''}
-                onChange={(e) => {
-                  const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                  setDeductionRate(value !== undefined && !isNaN(value) ? value : undefined);
-                }}
-                placeholder="1.0 (default)"
-              />
-              <small className="form-hint">Deje vacío para usar 1% (default) o ingrese 0 para sin deducción</small>
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* Sección de Cuentas por Cobrar (solo para RECEIPT) */}
-      {processType === ProcessType.RECEIPT && (
-        <div className="form-section">
-          <h3>Cuentas por Cobrar a Saldar</h3>
-          {!clientCode ? (
-            <div className="info-message">
-              <span className="material-icons">info</span>
-              <span>Seleccione un cliente para ver sus cuentas por cobrar</span>
-            </div>
-          ) : isLoadingReceivables ? (
-            <Loading />
-          ) : receivablesData && receivablesData.items.length > 0 ? (
+            {/* Sección de Cuentas por Cobrar (solo para RECEIPT) */}
+            {processType === ProcessType.RECEIPT && (
+              <div className="form-card">
+                <h2 className="form-card-title">Cuentas por Cobrar a Saldar</h2>
+                {!clientCode ? (
+                  <div className="info-message">
+                    <span className="material-icons">info</span>
+                    <span>Seleccione un cliente para ver sus cuentas por cobrar</span>
+                  </div>
+                ) : isLoadingReceivables ? (
+                  <Loading />
+                ) : receivablesData && receivablesData.items.length > 0 ? (
             <div className="receivables-list">
               <table className="receivables-table">
                 <thead>
@@ -777,323 +1399,249 @@ function MovementForm({
               )}
             </div>
           ) : (
-            <div className="info-message">
-              <span className="material-icons">info</span>
-              <span>Este cliente no tiene cuentas por cobrar pendientes</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Sección de Detalles del Movimiento (oculta para RECEIPT) */}
-      {processType !== ProcessType.RECEIPT && (
-      <div className="form-section">
-        <div className="section-header">
-          <h3>Detalles del Movimiento</h3>
-          <button type="button" onClick={addDetail} className="btn-secondary btn-sm">
-            <span className="material-icons btn-icon">add</span>
-            Agregar Detalle
-          </button>
-        </div>
-        {details.map((detail, index) => {
-          const stockError = validateStock(detail, detail.productReference);
-          const selectedProduct = products?.find((p) => p.reference === detail.productReference);
-
-          return (
-            <div key={index} className="detail-row">
-              <div className="form-group">
-                <label>
-                  Producto <span className="required">*</span>
-                </label>
-                <SearchableSelect
-                  options={
-                    products?.map((p) => ({
-                      value: p.reference,
-                      label: `${p.reference} - ${p.description} (Stock: ${p.stock})`,
-                    })) || []
-                  }
-                  value={detail.productReference}
-                  onChange={(value) => handleProductChange(index, value)}
-                  placeholder="Buscar producto por referencia o nombre..."
-                  searchPlaceholder="Escriba para buscar producto..."
-                  className={stockError ? 'input-error' : ''}
-                />
-                {stockError && (
-                  <span className="error-message">{stockError}</span>
-                )}
-                {selectedProduct && !stockError && (
-                  <small className="form-hint">
-                    Stock disponible: {selectedProduct.stock} |{' '}
-                    {processType === ProcessType.PURCHASE
-                      ? `Costo: ${formatCurrency(selectedProduct.costPrice || 0)}`
-                      : `Precio: ${formatCurrency(selectedProduct.salePrice)}`}
-                  </small>
+                  <div className="info-message">
+                    <span className="material-icons">info</span>
+                    <span>Este cliente no tiene cuentas por cobrar pendientes</span>
+                  </div>
                 )}
               </div>
-            <div className="form-group">
-              <label>Descripción *</label>
-              <input
-                type="text"
-                value={detail.description}
-                onChange={(e) => handleDetailChange(index, 'description', e.target.value)}
-                required
+            )}
+
+            {/* Detalles del Movimiento (oculta para RECEIPT) */}
+            {processType !== ProcessType.RECEIPT && (
+              <div className="form-card">
+                <div className="form-card-header">
+                  <h2 className="form-card-title">Detalles del Movimiento</h2>
+                  <button type="button" onClick={addDetail} className="btn-add-line">
+                    <span className="material-icons">add</span>
+                    <span>Agregar Línea</span>
+                  </button>
+                </div>
+
+                <div className="products-table-container">
+                  <table className="products-table-new">
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th className="text-right">Cantidad</th>
+                        <th className="text-right">Precio Unitario</th>
+                        <th className="text-right">Subtotal</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {details.map((detail, index) => {
+                        const stockError = validateStock(detail, detail.productReference);
+                        const selectedProduct = products?.find((p) => p.reference === detail.productReference);
+                        const lineSubtotal = detail.quantity * detail.unitPrice;
+
+                        return (
+                          <tr key={index} className="product-row">
+                            <td>
+                              {selectedProduct ? (
+                                <div className="product-cell">
+                                  <p className="product-name">{selectedProduct.description}</p>
+                                  <p className="product-meta">SKU: {selectedProduct.reference} | Stock: {selectedProduct.stock}</p>
+                                </div>
+                              ) : (
+                                <SearchableSelect
+                                  options={
+                                    products?.map((p) => ({
+                                      value: p.reference,
+                                      label: `${p.reference} - ${p.description} (Stock: ${p.stock})`,
+                                    })) || []
+                                  }
+                                  value={detail.productReference}
+                                  onChange={(value) => handleProductChange(index, value)}
+                                  placeholder="Buscar producto..."
+                                  searchPlaceholder="Escriba para buscar..."
+                                  className={stockError ? 'input-error' : ''}
+                                />
+                              )}
+                              {stockError && <span className="error-message">{stockError}</span>}
+                            </td>
+                            <td className="text-right">
+                              <input
+                                type="number"
+                                step="1"
+                                min="1"
+                                value={detail.quantity}
+                                onChange={(e) => handleDetailChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                                className="form-input-sm"
+                                required
+                              />
+                            </td>
+                            <td className="text-right">
+                              <input
+                                type="text"
+                                value={`$ ${detail.unitPrice.toLocaleString('es-CO', { minimumFractionDigits: 0 })}`}
+                                onChange={(e) => {
+                                  const numValue = parseFloat(e.target.value.replace(/[^0-9.-]+/g, '')) || 0;
+                                  handleDetailChange(index, 'unitPrice', numValue);
+                                }}
+                                className="form-input-sm"
+                                required
+                              />
+                            </td>
+                            <td className="text-right font-medium">
+                              {formatCurrency(lineSubtotal)}
+                            </td>
+                            <td className="text-right">
+                              {details.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeDetail(index)}
+                                  className="btn-delete-row"
+                                  title="Eliminar"
+                                >
+                                  <span className="material-icons">delete</span>
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Notas y Observaciones Card */}
+            <div className="form-card">
+              <h2 className="form-card-title">Notas y Observaciones</h2>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={4}
+                className="form-textarea"
+                placeholder="Añadir notas opcionales sobre el movimiento..."
               />
             </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Cantidad *</label>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={detail.quantity}
-                  onChange={(e) => handleDetailChange(index, 'quantity', parseFloat(e.target.value) || 0)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Precio Unitario *</label>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={detail.unitPrice}
-                  onChange={(e) => handleDetailChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>% Descuento</label>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  max="100"
-                  value={detail.discountRate || 0}
-                  onChange={(e) => handleDetailChange(index, 'discountRate', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-              <div className="form-group">
-                <label>% IVA</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  value={detail.taxRate !== undefined ? detail.taxRate : ''}
-                  onChange={(e) => {
-                    const inputValue = e.target.value;
-                    if (inputValue === '') {
-                      // Si está vacío, usar undefined (aplicará default del backend)
-                      handleDetailChange(index, 'taxRate', undefined);
-                    } else {
-                      const numValue = parseFloat(inputValue);
-                      if (!isNaN(numValue)) {
-                        handleDetailChange(index, 'taxRate', numValue);
-                      }
-                    }
-                  }}
-                  placeholder="19 (default)"
-                />
-                <small className="form-hint">Deje vacío para usar 19% (default) o ingrese 0 para sin IVA</small>
-              </div>
-            </div>
-            {details.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeDetail(index)}
-                className="btn-danger btn-sm"
-              >
-                <span className="material-icons btn-icon">delete</span>
-                Eliminar
-              </button>
-            )}
-            </div>
-          );
-        })}
-      </div>
-      )}
-
-      <div className="form-section">
-        <div className="section-header">
-          <h3>Formas de Pago</h3>
-          <button type="button" onClick={addPayment} className="btn-secondary btn-sm">
-            <span className="material-icons btn-icon">add</span>
-            Agregar Pago
-          </button>
-        </div>
-        {payments.map((payment, index) => (
-          <div key={index} className="payment-row">
-            <div className="form-row">
-              <div className="form-group">
-                <label>Método *</label>
-                <select
-                  value={payment.method}
-                  onChange={(e) => handlePaymentChange(index, 'method', e.target.value)}
-                  required
-                >
-                  <option value="EFECTIVO">Efectivo</option>
-                  <option value="TRANSFERENCIA">Transferencia</option>
-                  <option value="CHEQUE">Cheque</option>
-                  <option value="TARJETA">Tarjeta</option>
-                  <option value="CREDITO">Crédito</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Monto *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={payment.amount || ''}
-                  onChange={(e) => {
-                    const inputValue = e.target.value;
-                    // Permitir campo vacío temporalmente mientras el usuario escribe
-                    if (inputValue === '') {
-                      handlePaymentChange(index, 'amount', 0);
-                    } else {
-                      const numValue = parseFloat(inputValue);
-                      if (!isNaN(numValue) && numValue >= 0) {
-                        // Redondear a 2 decimales para evitar problemas de precisión
-                        const roundedValue = Math.round(numValue * 100) / 100;
-                        handlePaymentChange(index, 'amount', roundedValue);
-                      }
-                    }
-                  }}
-                  onBlur={(e) => {
-                    // Asegurar que el valor esté bien formateado al perder el foco
-                    const numValue = parseFloat(e.target.value) || 0;
-                    const roundedValue = Math.round(numValue * 100) / 100;
-                    if (payment.amount !== roundedValue) {
-                      handlePaymentChange(index, 'amount', roundedValue);
-                    }
-                  }}
-                  required
-                />
-              </div>
-              {processType === ProcessType.SALE && (
-                <div className="form-group credit-toggle-group">
-                  <label className="credit-toggle-label">
-                    <span className="credit-toggle-text">
-                      <span className="material-icons credit-icon">account_balance_wallet</span>
-                      Genera Cuenta por Cobrar
-                    </span>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        className="toggle-input"
-                        checked={payment.isCredit || false}
-                        onChange={(e) => handlePaymentChange(index, 'isCredit', e.target.checked)}
-                        disabled={payment.method === 'CREDITO'} // Deshabilitar si el método ya es CREDITO
-                      />
-                      <span className="toggle-slider"></span>
-                    </div>
-                  </label>
-                  {payment.isCredit && (
-                    <div className="credit-info">
-                      <span className="material-icons info-icon">info</span>
-                      <span>Este monto generará una cuenta por cobrar asociada al cliente.</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            {payments.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removePayment(index)}
-                className="btn-danger btn-sm"
-              >
-                <span className="material-icons btn-icon">delete</span>
-                Eliminar
-              </button>
-            )}
           </div>
-        ))}
-        <div className="totals-summary">
-          {processType === ProcessType.RECEIPT ? (
-            <>
-              <div className="total-row total-final">
-                <span>Total Cuentas Seleccionadas:</span>
-                <strong>{formatCurrency(total)}</strong>
-              </div>
-              <div className="total-row">
-                <span>Total Pagos:</span>
-                <strong>{formatCurrency(paymentsTotal)}</strong>
-              </div>
-              {paymentsTotal < total && (
-                <div className="total-row error">
-                  <span>Faltante:</span>
-                  <strong>{formatCurrency(total - paymentsTotal)}</strong>
-                </div>
-              )}
-              {paymentsTotal > total && (
-                <div className="total-row info">
-                  <span>Excedente:</span>
-                  <strong>{formatCurrency(paymentsTotal - total)}</strong>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="total-row">
-                <span>Subtotal:</span>
-                <strong>{formatCurrency(subtotal)}</strong>
-              </div>
-              <div className="total-row">
-                <span>IVA:</span>
-                <strong>{formatCurrency(taxTotal)}</strong>
-              </div>
-              {processType === ProcessType.PURCHASE && retentionTotal > 0 && (
-                <div className="total-row">
-                  <span>Retención ({retentionRate !== undefined ? retentionRate : 2.5}%):</span>
-                  <strong>-{formatCurrency(retentionTotal)}</strong>
-                </div>
-              )}
-              {processType === ProcessType.PURCHASE && deductionTotal > 0 && (
-                <div className="total-row">
-                  <span>Deducción ({deductionRate !== undefined ? deductionRate : 1}%):</span>
-                  <strong>-{formatCurrency(deductionTotal)}</strong>
-                </div>
-              )}
-              <div className="total-row total-final">
-                <span>Total:</span>
-                <strong>{formatCurrency(total)}</strong>
-              </div>
-              <div className="total-row">
-                <span>Total Pagos:</span>
-                <strong>{formatCurrency(paymentsTotal)}</strong>
-              </div>
-              {Math.abs(paymentDifference) > 0.01 && (
-                <div className="total-row error">
-                  <span>Diferencia:</span>
-                  <strong>{formatCurrency(paymentDifference)}</strong>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
 
-      <div className="form-actions form-actions-fixed">
-        <div className="form-actions-total">
-          <span className="total-label">Total a Pagar:</span>
-          <span className="total-amount">{formatCurrency(total)}</span>
+          {/* Right Sidebar */}
+          <aside className="form-sidebar-sticky">
+            <div className="form-card sidebar-card">
+              <div className="sidebar-header">
+                <h2 className="form-card-title">Formas de Pago</h2>
+              </div>
+              <div className="payments-grid">
+                {payments.map((payment, index) => (
+                  <div key={index} className="payment-item">
+                    <div className="payment-inputs">
+                      <select
+                        value={payment.method}
+                        onChange={(e) => handlePaymentChange(index, 'method', e.target.value)}
+                        className="payment-method-select"
+                        required
+                      >
+                        <option value="EFECTIVO">Efectivo</option>
+                        <option value="TRANSFERENCIA">Transferencia</option>
+                        <option value="CHEQUE">Cheque</option>
+                        <option value="TARJETA">Tarjeta</option>
+                        <option value="CREDITO">Crédito</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={`$ ${(payment.amount || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                        onChange={(e) => {
+                          const numValue = parseFloat(e.target.value.replace(/[^0-9.-]+/g, '')) || 0;
+                          const roundedValue = Math.round(numValue * 100) / 100;
+                          handlePaymentChange(index, 'amount', roundedValue);
+                        }}
+                        className="payment-amount-input"
+                        required
+                      />
+                    </div>
+                    {payments.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removePayment(index)}
+                        className="btn-delete-payment"
+                        title="Eliminar pago"
+                      >
+                        <span className="material-icons">close</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <button type="button" onClick={addPayment} className="btn-add-payment">
+                <span className="material-icons">add</span>
+                <span>Agregar Pago</span>
+              </button>
+
+              <hr className="sidebar-divider" />
+              <div className="totals-section">
+                {processType === ProcessType.RECEIPT ? (
+                  <>
+                    <div className="total-row">
+                      <span>Total Cuentas Seleccionadas</span>
+                      <span>{formatCurrency(total)}</span>
+                    </div>
+                    <div className="total-row">
+                      <span>Total Pagos</span>
+                      <span>{formatCurrency(paymentsTotal)}</span>
+                    </div>
+                    {paymentsTotal < total && (
+                      <div className="total-row-alert error">
+                        <span>Faltante</span>
+                        <span>{formatCurrency(total - paymentsTotal)}</span>
+                      </div>
+                    )}
+                    {paymentsTotal > total && (
+                      <div className="total-row-alert info">
+                        <span>Excedente</span>
+                        <span>{formatCurrency(paymentsTotal - total)}</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="total-row">
+                      <span>Subtotal</span>
+                      <span>{formatCurrency(subtotal)}</span>
+                    </div>
+                    <div className="total-row">
+                      <span>IVA (19%)</span>
+                      <span>{formatCurrency(taxTotal)}</span>
+                    </div>
+                    {processType === ProcessType.PURCHASE && retentionTotal > 0 && (
+                      <div className="total-row">
+                        <span>Retención ({retentionRate !== undefined ? retentionRate : 2.5}%)</span>
+                        <span className="text-red">-{formatCurrency(retentionTotal)}</span>
+                      </div>
+                    )}
+                    {processType === ProcessType.PURCHASE && deductionTotal > 0 && (
+                      <div className="total-row">
+                        <span>Deducción ({deductionRate !== undefined ? deductionRate : 1}%)</span>
+                        <span className="text-red">-{formatCurrency(deductionTotal)}</span>
+                      </div>
+                    )}
+                    <div className="total-row-final">
+                      <span>Total a Pagar</span>
+                      <span>{formatCurrency(total)}</span>
+                    </div>
+                    <div className="total-row">
+                      <span>Total Pagado</span>
+                      <span>{formatCurrency(paymentsTotal)}</span>
+                    </div>
+                    {Math.abs(paymentDifference) > 0.01 && (
+                      <div className="total-row-alert error">
+                        <span>Saldo Pendiente</span>
+                        <span>{formatCurrency(Math.abs(paymentDifference))}</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </aside>
         </div>
-        <div className="form-actions-buttons">
-          <button type="submit" className="btn-primary btn-primary-large" disabled={isLoading}>
-            <span className="material-icons btn-icon">
-              {isLoading ? 'hourglass_empty' : 'check_circle'}
-            </span>
-            {isLoading ? 'Guardando...' : 'Guardar Movimiento'}
-          </button>
-          <button type="button" onClick={onCancel} className="btn-secondary" disabled={isLoading}>
-            <span className="material-icons btn-icon">close</span>
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }
 

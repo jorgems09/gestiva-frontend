@@ -4,13 +4,13 @@
   background-color: var(--color-bg);
 }
 
-/* Desktop Sidebar - Material Design */
+/* Desktop Sidebar - Matching Design */
 .sidebar {
-  width: 260px;
-  background: linear-gradient(180deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
-  color: var(--color-text-on-primary);
-  padding: 0;
-  box-shadow: var(--elevation-4);
+  width: 256px; /* w-64 = 16rem = 256px */
+  background: #ffffff; /* bg-white */
+  border-right: 1px solid #e5e7eb; /* border-r */
+  padding: 1rem; /* p-4 */
+  box-shadow: none;
   position: fixed;
   left: 0;
   top: 0;
@@ -18,50 +18,54 @@
   z-index: var(--z-fixed);
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .sidebar-header {
-  padding: var(--spacing-lg);
-  background: rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
+  padding: 0;
+  background: transparent;
+  border-bottom: none;
+  backdrop-filter: none;
+  margin-bottom: 1rem;
 }
 
 .sidebar-branding {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* Cambiar a row para alinear horizontalmente */
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 0.75rem; /* gap-3 */
 }
 
-/* Contenedor del logo de la empresa */
+/* Contenedor del logo de la empresa - Matching Design */
 .company-logo-container {
-  width: 64px;
-  height: 64px;
+  width: 40px; /* size-10 */
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-sm);
-  box-shadow: var(--elevation-2);
-  transition: transform var(--transition-fast), box-shadow var(--transition-base);
+  background: transparent;
+  border-radius: 9999px; /* rounded-full */
+  padding: 0;
+  box-shadow: none;
+  transition: none;
   flex-shrink: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .company-logo-container:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--elevation-4);
-  background: rgba(255, 255, 255, 0.2);
+  transform: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 .company-logo {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  border-radius: var(--radius-sm);
-  /* Filtro CSS para hacer el logo blanco - funciona con SVG cargado como imagen */
-  filter: brightness(0) invert(1);
+  object-fit: cover;
+  border-radius: 9999px; /* rounded-full */
+  filter: none; /* Remover filtro para que se vea el logo original */
 }
 
 .company-logo-placeholder {
@@ -70,8 +74,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-on-primary);
-  opacity: 0.8;
+  color: #4c669a;
+  opacity: 1;
+  background: #f6f6f8;
+  border-radius: 9999px;
 }
 
 .company-logo-placeholder.hidden {
@@ -82,51 +88,58 @@
   font-size: 32px;
 }
 
-/* Contenedor del nombre de la empresa y aplicación */
+/* Contenedor del nombre de la empresa y aplicación - Matching Design */
 .app-name-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-xs);
-  text-align: center;
+  align-items: flex-start;
+  gap: 0;
+  text-align: left;
 }
 
-/* Nombre de la empresa */
+/* Nombre de la empresa - Matching Design */
 .company-name {
   margin: 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: rgba(255, 255, 255, 0.85);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  line-height: 1.2;
+  font-size: 1rem; /* text-base */
+  font-weight: 500; /* font-medium */
+  color: #0d121b; /* text-[#0d121b] */
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.5;
 }
 
-/* Nombre de la aplicación */
+/* Nombre de la aplicación - Matching Design */
 .app-name {
   margin: 0;
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-on-primary);
-  letter-spacing: -0.5px;
-  line-height: 1.2;
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 400; /* font-normal */
+  color: #4c669a; /* text-[#4c669a] */
+  letter-spacing: normal;
+  line-height: 1.5;
 }
 
 /* Subtítulo de la aplicación */
 .app-subtitle {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: rgba(255, 255, 255, 0.7);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #4c669a;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.sidebar-menu-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 1.5rem; /* mt-6 */
 }
 
 .sidebar-menu {
   list-style: none;
-  padding: var(--spacing-md) 0;
+  padding: 0;
   margin: 0;
-  flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* gap-2 */
 }
 
 .sidebar-menu li {
@@ -136,48 +149,38 @@
 .sidebar-menu a {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  color: rgba(255, 255, 255, 0.87);
+  gap: 0.75rem; /* gap-3 */
+  padding: 0.5rem 0.75rem; /* px-3 py-2 */
+  color: #4c669a; /* text-[#4c669a] */
   text-decoration: none;
-  transition: background-color var(--transition-base), border-color var(--transition-base);
-  border-left: 3px solid transparent;
-  font-weight: var(--font-weight-medium);
-  font-size: 0.875rem;
-  letter-spacing: 0.0178571429em;
+  transition: all 0.2s ease;
+  border-left: none;
+  border-radius: 0.5rem; /* rounded-lg */
+  font-weight: 500; /* font-medium */
+  font-size: 0.875rem; /* text-sm */
+  letter-spacing: normal;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .sidebar-menu a::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
-}
-
-.sidebar-menu a:hover::before {
-  width: 300px;
-  height: 300px;
+  display: none; /* Remover el efecto de ripple */
 }
 
 .sidebar-menu a:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-left-color: var(--color-accent);
-  color: var(--color-text-on-primary);
+  background: var(--color-primary-alpha-10); /* bg-primary/10 */
+  color: #4c669a;
 }
 
 .sidebar-menu a.active {
-  background: rgba(255, 255, 255, 0.12);
-  border-left-color: var(--color-accent);
-  color: var(--color-text-on-primary);
-  font-weight: var(--font-weight-medium);
+  background: var(--color-primary-alpha-10); /* bg-primary/10 */
+  color: var(--color-primary); /* text-primary */
+  font-weight: 500;
+}
+
+.sidebar-menu a.active .material-icons,
+.sidebar-menu a.active .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1; /* Icono relleno cuando está activo */
 }
 
 .menu-icon {
@@ -193,6 +196,62 @@
 
 .menu-label {
   flex: 1;
+}
+
+/* Sidebar Actions - Botón Nuevo Movimiento */
+.sidebar-actions {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sidebar-new-movement-btn {
+  display: flex;
+  min-width: 84px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  height: 2.5rem;
+  padding: 0 1rem;
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.015em;
+  border: none;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.sidebar-new-movement-btn:hover {
+  background: var(--color-primary-alpha-90);
+}
+
+/* Sidebar Footer - Configuración y Ayuda */
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.sidebar-footer-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  color: #4c669a;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.sidebar-footer-link:hover {
+  background: rgba(43, 108, 238, 0.1);
 }
 
 /* Mobile Menu Button */
@@ -330,15 +389,23 @@
   font-weight: var(--font-weight-medium);
 }
 
-/* Main Content */
+/* Main Content - Matching Design */
 .main-content {
   flex: 1;
-  padding: var(--spacing-xl);
-  background-color: var(--color-bg);
+  padding: 2rem; /* p-8 */
+  background-color: #f6f6f8; /* bg-background-light */
   overflow-y: auto;
   min-height: 100vh;
-  margin-left: 260px;
-  padding-bottom: calc(var(--spacing-xl) + 60px); /* Space for bottom nav on mobile */
+  margin-left: 256px; /* Ajustar al nuevo ancho del sidebar */
+  padding-bottom: calc(2rem + 60px); /* Space for bottom nav on mobile */
+}
+
+/* Contenedor interno para max-width - Matching Design */
+.main-content > * {
+  max-width: 80rem; /* max-w-7xl = 80rem */
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
 }
 
 /* Drawer Menu Styles */
