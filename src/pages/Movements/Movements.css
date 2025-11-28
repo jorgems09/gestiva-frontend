@@ -1485,6 +1485,7 @@
   margin-top: 1rem;
   border-radius: 0.5rem;
   border: 1px solid #e5e7eb;
+  /* NO usar overflow-y hidden para permitir que el dropdown del SearchableSelect sea visible */
 }
 
 .products-table-new {
@@ -1516,15 +1517,47 @@
 .products-table-new tbody tr {
   border-bottom: 1px solid #e5e7eb;
   transition: background-color 0.2s ease;
+  position: relative; /* Contexto para z-index */
 }
 
 .products-table-new tbody tr:hover {
   background: #f9fafb;
+  z-index: 1; /* Elevar ligeramente en hover */
+}
+
+/* Fila que contiene un SearchableSelect abierto debe tener z-index alto */
+.products-table-new tbody tr:has(.searchable-select.open) {
+  z-index: 50;
 }
 
 .products-table-new td {
   padding: 1rem;
-  vertical-align: middle;
+  vertical-align: top; /* Cambiar a top para alinear con el SearchableSelect */
+  position: relative; /* Importante para que el dropdown tenga contexto */
+}
+
+/* Asegurar que la celda del producto tenga suficiente espacio para el dropdown */
+.products-table-new td:first-child {
+  min-width: 300px;
+  overflow: visible; /* CRÍTICO: permitir que el dropdown sea visible */
+  position: relative; /* Contexto de posicionamiento para el SearchableSelect */
+}
+
+/* SearchableSelect dentro de la tabla */
+.products-table-new td .searchable-select {
+  position: relative;
+  z-index: 10; /* Aumentar cuando está abierto */
+}
+
+.products-table-new td .searchable-select.open {
+  z-index: 100; /* Mucho más alto cuando está abierto */
+}
+
+.products-table-new td .searchable-select-dropdown {
+  z-index: 10001; /* Muy alto para estar sobre todo */
+  min-width: 350px; /* Ancho mínimo para mostrar bien los nombres de productos */
+  max-width: 500px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* Sombra más prominente */
 }
 
 .products-table-new td.text-right {
