@@ -79,7 +79,14 @@ export default function SearchableSelect({
     >
       <div
         className="searchable-select-trigger"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation(); // Prevenir que el evento se propague a elementos padres
+          console.log('SearchableSelect trigger clicked, disabled:', disabled, 'isOpen:', isOpen);
+          if (!disabled) {
+            setIsOpen(!isOpen);
+            console.log('SearchableSelect toggle, new state:', !isOpen);
+          }
+        }}
       >
         <span className={selectedOption ? '' : 'placeholder'}>
           {selectedOption ? selectedOption.label : placeholder}
