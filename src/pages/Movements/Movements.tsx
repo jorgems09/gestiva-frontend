@@ -1424,7 +1424,9 @@ function MovementForm({
                       <tr>
                         <th>Producto</th>
                         <th className="text-right">Cantidad</th>
-                        <th className="text-right">Precio Unitario</th>
+                        <th className="text-right">Precio Unit.</th>
+                        <th className="text-right">% Desc.</th>
+                        <th className="text-right">% IVA</th>
                         <th className="text-right">Subtotal</th>
                         <th></th>
                       </tr>
@@ -1433,30 +1435,28 @@ function MovementForm({
                       {details.map((detail, index) => {
                         const stockError = validateStock(detail, detail.productReference);
                         const selectedProduct = products?.find((p) => p.reference === detail.productReference);
-                        const lineSubtotal = detail.quantity * detail.unitPrice;
+                        const baseAmount = detail.quantity * detail.unitPrice;
+                        const discountAmount = baseAmount * ((detail.discountRate || 0) / 100);
+                        const lineSubtotal = baseAmount - discountAmount;
 
                         return (
                           <tr key={index} className="product-row">
                             <td>
-                              {selectedProduct ? (
-                                <div className="product-cell">
-                                  <p className="product-name">{selectedProduct.description}</p>
-                                  <p className="product-meta">SKU: {selectedProduct.reference} | Stock: {selectedProduct.stock}</p>
-                                </div>
-                              ) : (
-                                <SearchableSelect
-                                  options={
-                                    products?.map((p) => ({
-                                      value: p.reference,
-                                      label: `${p.reference} - ${p.description} (Stock: ${p.stock})`,
-                                    })) || []
-                                  }
-                                  value={detail.productReference}
-                                  onChange={(value) => handleProductChange(index, value)}
-                                  placeholder="Buscar producto..."
-                                  searchPlaceholder="Escriba para buscar..."
-                                  className={stockError ? 'input-error' : ''}
-                                />
+                              <SearchableSelect
+                                options={
+                                  products?.map((p) => ({
+                                    value: p.reference,
+                                    label: `${p.reference} - ${p.description} (Stock: ${p.stock})`,
+                                  })) || []
+                                }
+                                value={detail.productReference}
+                                onChange={(value) => handleProductChange(index, value)}
+                                placeholder="Buscar producto..."
+                                searchPlaceholder="Escriba para buscar..."
+                                className={stockError ? 'input-error' : ''}
+                              />
+                              {selectedProduct && (
+                                <p className="product-meta">SKU: {selectedProduct.reference} | Stock: {selectedProduct.stock}</p>
                               )}
                               {stockError && <span className="error-message">{stockError}</span>}
                             </td>
@@ -1473,14 +1473,47 @@ function MovementForm({
                             </td>
                             <td className="text-right">
                               <input
-                                type="text"
-                                value={`$ ${detail.unitPrice.toLocaleString('es-CO', { minimumFractionDigits: 0 })}`}
-                                onChange={(e) => {
-                                  const numValue = parseFloat(e.target.value.replace(/[^0-9.-]+/g, '')) || 0;
-                                  handleDetailChange(index, 'unitPrice', numValue);
-                                }}
+                                type="number"
+                                step="1"
+                                min="0"
+                                value={detail.unitPrice}
+                                onChange={(e) => handleDetailChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
                                 className="form-input-sm"
                                 required
+                              />
+                            </td>
+                            <td className="text-right">
+                              <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                max="100"
+                                value={detail.discountRate || 0}
+                                onChange={(e) => handleDetailChange(index, 'discountRate', parseFloat(e.target.value) || 0)}
+                                className="form-input-xs"
+                                placeholder="0"
+                              />
+                            </td>
+                            <td className="text-right">
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                value={detail.taxRate !== undefined ? detail.taxRate : 19}
+                                onChange={(e) => {
+                                  const inputValue = e.target.value;
+                                  if (inputValue === '') {
+                                    handleDetailChange(index, 'taxRate', undefined);
+                                  } else {
+                                    const numValue = parseFloat(inputValue);
+                                    if (!isNaN(numValue)) {
+                                      handleDetailChange(index, 'taxRate', numValue);
+                                    }
+                                  }
+                                }}
+                                className="form-input-xs"
+                                placeholder="19"
                               />
                             </td>
                             <td className="text-right font-medium">
@@ -1492,7 +1525,7 @@ function MovementForm({
                                   type="button"
                                   onClick={() => removeDetail(index)}
                                   className="btn-delete-row"
-                                  title="Eliminar"
+                                  title="Eliminar línea"
                                 >
                                   <span className="material-icons">delete</span>
                                 </button>
