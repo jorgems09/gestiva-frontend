@@ -1214,7 +1214,7 @@
   right: 0;
   bottom: 0;
   background: #f8f9fc;
-  z-index: 999;
+  z-index: var(--z-fullscreen-form, 1100); /* Por encima del sidebar (1030) y modal backdrop (1040) */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1224,7 +1224,7 @@
 .form-header-sticky {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 10; /* Relativo al form-fullscreen, no al document */
   background: rgba(248, 249, 252, 0.9);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid #e7ebf3;
