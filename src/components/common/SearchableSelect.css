@@ -55,7 +55,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  z-index: 99999; /* Z-index MUY alto para asegurar que flote sobre todos los elementos */
+  z-index: 99999;
   max-height: 300px;
   overflow: hidden;
   display: flex;
@@ -63,12 +63,10 @@
   animation: dropdownFadeIn 0.2s ease-out;
 }
 
-/* Dropdown con position: fixed para escapar de contenedores con overflow */
-.searchable-select-dropdown-fixed {
-  position: fixed !important;
-  /* top, left, width se establecen dinámicamente via style en el componente */
+/* Dropdown renderizado en Portal (document.body) */
+.searchable-select-dropdown-portal {
+  /* position, top, left, width se establecen via style inline */
   right: auto !important; /* Anular el right: 0 del dropdown normal */
-  z-index: 999999 !important; /* Z-index MUCHO más alto para fixed positioning */
 }
 
 @keyframes dropdownFadeIn {

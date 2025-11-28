@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import './SearchableSelect.css';
 
 interface Option {
@@ -36,7 +37,7 @@ export default function SearchableSelect({
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,15 +48,39 @@ export default function SearchableSelect({
     option.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calcular la posición del dropdown cuando se abre
-  useEffect(() => {
-    if (isOpen && triggerRef.current) {
+  // Calcular y actualizar la posición del dropdown
+  const updateDropdownPosition = () => {
+    if (triggerRef.current && isOpen) {
       const rect = triggerRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: Math.max(rect.width, 400), // Ancho mínimo de 400px
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+      
+      setDropdownStyle({
+        position: 'absolute',
+        top: `${rect.bottom + scrollTop + 4}px`,
+        left: `${rect.left + scrollLeft}px`,
+        width: `${Math.max(rect.width, 400)}px`,
+        maxWidth: '600px',
+        zIndex: 9999999,
       });
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      updateDropdownPosition();
+      
+      // Actualizar posición en scroll y resize
+      const handleScroll = () => updateDropdownPosition();
+      const handleResize = () => updateDropdownPosition();
+      
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
     }
   }, [isOpen]);
 
@@ -63,7 +88,8 @@ export default function SearchableSelect({
     const handleClickOutside = (event: MouseEvent) => {
       if (
         containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
+        !containerRef.current.contains(event.target as Node) &&
+        !(event.target as Element).closest('.searchable-select-dropdown-portal')
       ) {
         setIsOpen(false);
         setSearchTerm('');
@@ -86,6 +112,57 @@ export default function SearchableSelect({
     setSearchTerm('');
   };
 
+  const dropdownContent = isOpen && (
+    <div
+      className="searchable-select-dropdown searchable-select-dropdown-portal"
+      style={dropdownStyle}
+    >
+      <div className="searchable-select-search">
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder={searchPlaceholder}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="searchable-select-input"
+        />
+      </div>
+
+      <div className="searchable-select-options">
+        {filteredOptions.length > 0 ? (
+          filteredOptions.map((option) => (
+            <div
+              key={option.value}
+              className={`searchable-select-option ${
+                value === option.value ? 'selected' : ''
+              }`}
+              onClick={() => handleSelect(option.value)}
+            >
+              {renderOption ? renderOption(option) : option.label}
+            </div>
+          ))
+        ) : (
+          <div className="searchable-select-empty">
+            No se encontraron resultados
+          </div>
+        )}
+
+        {onAddNew && (
+          <div
+            className="searchable-select-add-new"
+            onClick={() => {
+              onAddNew();
+              setIsOpen(false);
+              setSearchTerm('');
+            }}
+          >
+            {addNewLabel}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div
       ref={containerRef}
@@ -96,10 +173,8 @@ export default function SearchableSelect({
         className="searchable-select-trigger"
         onClick={(e) => {
           e.stopPropagation();
-          console.log('SearchableSelect trigger clicked, disabled:', disabled, 'isOpen:', isOpen);
           if (!disabled) {
             setIsOpen(!isOpen);
-            console.log('SearchableSelect toggle, new state:', !isOpen);
           }
         }}
       >
@@ -109,62 +184,8 @@ export default function SearchableSelect({
         <span className="searchable-select-arrow">▼</span>
       </div>
 
-      {isOpen && dropdownPosition && (
-        <div
-          className="searchable-select-dropdown searchable-select-dropdown-fixed"
-          style={{
-            position: 'fixed',
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`,
-            maxWidth: '600px',
-          }}
-        >
-          <div className="searchable-select-search">
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="searchable-select-input"
-            />
-          </div>
-
-          <div className="searchable-select-options">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => (
-                <div
-                  key={option.value}
-                  className={`searchable-select-option ${
-                    value === option.value ? 'selected' : ''
-                  }`}
-                  onClick={() => handleSelect(option.value)}
-                >
-                  {renderOption ? renderOption(option) : option.label}
-                </div>
-              ))
-            ) : (
-              <div className="searchable-select-empty">
-                No se encontraron resultados
-              </div>
-            )}
-
-            {onAddNew && (
-              <div
-                className="searchable-select-add-new"
-                onClick={() => {
-                  onAddNew();
-                  setIsOpen(false);
-                  setSearchTerm('');
-                }}
-              >
-                {addNewLabel}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Renderizar dropdown en document.body usando Portal */}
+      {isOpen && createPortal(dropdownContent, document.body)}
 
       {required && !value && (
         <input
