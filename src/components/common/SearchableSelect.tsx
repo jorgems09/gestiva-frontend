@@ -36,7 +36,9 @@ export default function SearchableSelect({
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
@@ -44,6 +46,18 @@ export default function SearchableSelect({
   const filteredOptions = options.filter((option) =>
     option.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Calcular la posición del dropdown cuando se abre
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: Math.max(rect.width, 400), // Ancho mínimo de 400px
+      });
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -78,9 +92,10 @@ export default function SearchableSelect({
       className={`searchable-select ${className} ${disabled ? 'disabled' : ''} ${isOpen ? 'open' : ''}`}
     >
       <div
+        ref={triggerRef}
         className="searchable-select-trigger"
         onClick={(e) => {
-          e.stopPropagation(); // Prevenir que el evento se propague a elementos padres
+          e.stopPropagation();
           console.log('SearchableSelect trigger clicked, disabled:', disabled, 'isOpen:', isOpen);
           if (!disabled) {
             setIsOpen(!isOpen);
@@ -94,8 +109,17 @@ export default function SearchableSelect({
         <span className="searchable-select-arrow">▼</span>
       </div>
 
-      {isOpen && (
-        <div className="searchable-select-dropdown">
+      {isOpen && dropdownPosition && (
+        <div
+          className="searchable-select-dropdown searchable-select-dropdown-fixed"
+          style={{
+            position: 'fixed',
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            maxWidth: '600px',
+          }}
+        >
           <div className="searchable-select-search">
             <input
               ref={inputRef}
