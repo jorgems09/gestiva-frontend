@@ -12,6 +12,7 @@ import DateRangePicker from '../../components/common/DateRangePicker';
 import Pagination from '../../components/common/Pagination';
 import StatusBadge from '../../components/common/StatusBadge';
 import { useToast } from '../../hooks/useToast';
+import { useBusinessInfo } from '../../hooks/useBusinessInfo';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { ProcessType, PROCESS_TYPE_LABELS } from '../../constants/process-types';
 import type { CreateMovementDto, MovementDetail, PaymentDetail, RelatedAccountDto, MovementHeader } from '../../types/movement.types';
@@ -31,6 +32,7 @@ export default function Movements() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const queryClient = useQueryClient();
+  const { businessInfo } = useBusinessInfo();
 
   // Escuchar evento del botón del sidebar
   useEffect(() => {
@@ -299,10 +301,12 @@ export default function Movements() {
 
             {/* Header del negocio - Solo visible en impresión */}
             <div className="pos-header">
-              <h1>TIENDA FEMENINA</h1>
-              <p>NIT: 123456789-0</p>
-              <p>Dirección: Calle Principal #123</p>
-              <p>Tel: (57) 300 123 4567</p>
+              <h1>{businessInfo.name}</h1>
+              <p>NIT: {businessInfo.nit}</p>
+              <p>Dirección: {businessInfo.address}</p>
+              <p>Tel: {businessInfo.phone}</p>
+              {businessInfo.email && <p>Email: {businessInfo.email}</p>}
+              {businessInfo.website && <p>Web: {businessInfo.website}</p>}
               <div className="pos-separator">━━━━━━━━━━━━━━━━━━━━</div>
               <p className="modal-subtitle">{selectedMovement.consecutive}</p>
               <div className="pos-separator">━━━━━━━━━━━━━━━━━━━━</div>

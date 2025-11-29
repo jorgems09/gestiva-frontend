@@ -1,16 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../hooks/useTheme';
+import { useBusinessInfo } from '../../hooks/useBusinessInfo';
+import { useToast } from '../../hooks/useToast';
 import './Settings.css';
 
 export default function Settings() {
   const { currentTheme, applyTheme, getAllThemes } = useTheme();
+  const { businessInfo, updateBusinessInfo } = useBusinessInfo();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState('appearance');
+  const [businessForm, setBusinessForm] = useState(businessInfo);
 
   const themes = getAllThemes();
 
   const handleThemeChange = (themeKey: string) => {
     applyTheme(themeKey);
   };
+
+  const handleBusinessInfoChange = (field: keyof typeof businessInfo, value: string) => {
+    setBusinessForm({ ...businessForm, [field]: value });
+  };
+
+  const handleSaveBusinessInfo = () => {
+    updateBusinessInfo(businessForm);
+    showToast('Datos del negocio guardados exitosamente', 'success');
+  };
+
+  // Sincronizar formulario cuando cambie la pestaña o los datos del negocio
+  useEffect(() => {
+    if (activeTab === 'business') {
+      setBusinessForm(businessInfo);
+    }
+  }, [activeTab, businessInfo]);
 
   return (
     <div className="settings-page">
@@ -32,6 +53,13 @@ export default function Settings() {
             >
               <span className="material-symbols-outlined">palette</span>
               <span>Apariencia</span>
+            </button>
+            <button
+              className={`settings-nav-item ${activeTab === 'business' ? 'active' : ''}`}
+              onClick={() => setActiveTab('business')}
+            >
+              <span className="material-symbols-outlined">store</span>
+              <span>Datos del Negocio</span>
             </button>
             <button
               className={`settings-nav-item ${activeTab === 'general' ? 'active' : ''}`}
@@ -104,6 +132,101 @@ export default function Settings() {
               <div className="settings-info">
                 <span className="material-symbols-outlined">info</span>
                 <p>El tema seleccionado se aplicará inmediatamente y se guardará en tu navegador</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'business' && (
+            <div className="settings-section">
+              <div className="settings-section-header">
+                <h2>Datos del Negocio</h2>
+                <p>Configura la información de tu negocio que aparecerá en las tirillas de impresión</p>
+              </div>
+
+              <div className="business-info-form">
+                <div className="form-group">
+                  <label htmlFor="business-name">Nombre del Negocio *</label>
+                  <input
+                    id="business-name"
+                    type="text"
+                    value={businessForm.name}
+                    onChange={(e) => handleBusinessInfoChange('name', e.target.value)}
+                    placeholder="Ej: Tienda Femenina"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="business-nit">NIT / Identificación *</label>
+                  <input
+                    id="business-nit"
+                    type="text"
+                    value={businessForm.nit}
+                    onChange={(e) => handleBusinessInfoChange('nit', e.target.value)}
+                    placeholder="Ej: 123456789-0"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="business-address">Dirección *</label>
+                  <input
+                    id="business-address"
+                    type="text"
+                    value={businessForm.address}
+                    onChange={(e) => handleBusinessInfoChange('address', e.target.value)}
+                    placeholder="Ej: Calle Principal #123"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="business-phone">Teléfono *</label>
+                  <input
+                    id="business-phone"
+                    type="text"
+                    value={businessForm.phone}
+                    onChange={(e) => handleBusinessInfoChange('phone', e.target.value)}
+                    placeholder="Ej: (57) 300 123 4567"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="business-email">Email (Opcional)</label>
+                  <input
+                    id="business-email"
+                    type="email"
+                    value={businessForm.email || ''}
+                    onChange={(e) => handleBusinessInfoChange('email', e.target.value)}
+                    placeholder="Ej: contacto@tienda.com"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="business-website">Sitio Web (Opcional)</label>
+                  <input
+                    id="business-website"
+                    type="url"
+                    value={businessForm.website || ''}
+                    onChange={(e) => handleBusinessInfoChange('website', e.target.value)}
+                    placeholder="Ej: www.tienda.com"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-actions">
+                  <button className="btn btn-primary" onClick={handleSaveBusinessInfo}>
+                    <span className="material-symbols-outlined">save</span>
+                    Guardar Cambios
+                  </button>
+                </div>
+
+                <div className="settings-info">
+                  <span className="material-symbols-outlined">info</span>
+                  <p>Esta información aparecerá en las tirillas de impresión de movimientos. Los campos marcados con * son obligatorios.</p>
+                </div>
               </div>
             </div>
           )}
