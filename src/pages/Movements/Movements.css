@@ -92,6 +92,7 @@
   }
 }
 
+/* Search Input - Estilo idéntico a Productos - v2 */
 .search-input-wrapper {
   position: relative;
   flex: 1;
@@ -116,11 +117,11 @@
   border-radius: 0.5rem;
   border: 1px solid #d1d5db; /* border-gray-300 - Borde delgado y suave */
   background: #f9fafb; /* bg-gray-50 - Fondo gris muy claro */
-  padding-left: 2.5rem;
-  padding-right: 0.75rem;
+  padding: 0 0.75rem 0 2.5rem; /* Padding compacto */
   font-size: 0.875rem; /* text-sm - Texto más pequeño */
   font-weight: 400; /* font-normal - Peso regular */
   height: 2.5rem;
+  line-height: 2.5rem;
   color: #111827; /* text-gray-900 - Color del texto */
   transition: all 0.2s ease;
 }
@@ -134,6 +135,7 @@
 .search-input::placeholder {
   color: #6b7280; /* text-gray-500 - Placeholder gris claro */
   font-weight: 400; /* font-normal - Peso regular */
+  font-size: 0.875rem;
 }
 
 .filter-actions {
