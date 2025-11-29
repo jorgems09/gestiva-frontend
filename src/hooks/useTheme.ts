@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { themes, defaultTheme, type Theme } from '../config/themes';
 
 const THEME_STORAGE_KEY = 'gestiva-theme';
@@ -8,7 +8,7 @@ export const useTheme = () => {
     return localStorage.getItem(THEME_STORAGE_KEY) || defaultTheme;
   });
 
-  const applyTheme = (themeKey: string) => {
+  const applyTheme = useCallback((themeKey: string) => {
     const theme = themes[themeKey];
     if (!theme) {
       console.warn(`Theme "${themeKey}" not found, using default`);
@@ -41,12 +41,16 @@ export const useTheme = () => {
     // Guardar en localStorage
     localStorage.setItem(THEME_STORAGE_KEY, themeKey);
     setCurrentTheme(themeKey);
-  };
-
-  // Aplicar tema al montar
-  useEffect(() => {
-    applyTheme(currentTheme);
   }, []);
+
+  // Aplicar tema al montar componente
+  useEffect(() => {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || defaultTheme;
+    if (savedTheme !== currentTheme) {
+      setCurrentTheme(savedTheme);
+    }
+    applyTheme(savedTheme);
+  }, []); // Solo ejecutar una vez al montar
 
   const getTheme = (): Theme | undefined => {
     return themes[currentTheme];
