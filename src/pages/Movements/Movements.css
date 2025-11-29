@@ -1956,3 +1956,69 @@
   }
 }
 
+/* Print Styles - Ocultar elementos innecesarios al imprimir */
+@media print {
+  /* Ocultar todo excepto el modal de detalle */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Mostrar solo el modal de detalle */
+  .movement-detail-modal,
+  .movement-detail-modal * {
+    visibility: visible;
+  }
+
+  /* Posicionar el modal en la parte superior de la página */
+  .movement-detail-modal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+  }
+
+  /* Ocultar overlay y botones */
+  .modal-overlay {
+    position: static;
+    background: transparent;
+  }
+
+  .modal-header .btn-close-modal,
+  .modal-footer {
+    display: none !important;
+  }
+
+  /* Ajustar estilos del modal para impresión */
+  .modal-content {
+    box-shadow: none;
+    border: none;
+    max-width: 100%;
+  }
+
+  .modal-body {
+    padding: 0;
+  }
+
+  /* Ocultar elementos de la página principal */
+  .page-header-new,
+  .movements-filters,
+  .movements-list,
+  .pagination {
+    display: none !important;
+  }
+
+  /* Asegurar que las tablas se impriman correctamente */
+  .detail-table {
+    page-break-inside: avoid;
+  }
+
+  .detail-section {
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+}
+
