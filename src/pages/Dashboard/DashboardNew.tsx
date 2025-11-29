@@ -15,6 +15,15 @@ type TimePeriod = '7days' | '30days';
 export default function DashboardNew() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('7days');
   const navigate = useNavigate();
+
+  const handleCreateMovement = () => {
+    // Navegar a la página de movimientos
+    navigate('/movements');
+    // Disparar evento para abrir el formulario automáticamente
+    setTimeout(() => {
+      window.dispatchEvent(new Event('open-movement-form'));
+    }, 100);
+  };
   
   // Usar fecha local (Colombia UTC-5) en lugar de UTC
   const getLocalDate = () => {
@@ -214,7 +223,7 @@ export default function DashboardNew() {
           <button className="btn-icon-round">
             <span className="material-icons">notifications</span>
           </button>
-          <button className="btn btn-primary" onClick={() => navigate('/movements')}>
+          <button className="btn btn-primary" onClick={handleCreateMovement}>
             <span className="material-icons">add</span>
             Crear Movimiento
           </button>
