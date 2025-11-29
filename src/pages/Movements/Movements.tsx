@@ -696,7 +696,9 @@ export default function Movements() {
             </div>
             <div className="search-row">
               <div className="search-input-wrapper">
-                <span className="material-icons search-icon">search</span>
+                <div className="search-icon">
+                  <span className="material-symbols-outlined">search</span>
+                </div>
                 <input
                   type="text"
                   className="search-input"
