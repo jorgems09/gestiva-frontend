@@ -92,7 +92,7 @@
   }
 }
 
-/* Search Input - Estilo idéntico a Productos - v2 */
+/* Search Input - Estilo idéntico a Productos - v3 */
 .search-input-wrapper {
   position: relative;
   flex: 1;
@@ -107,7 +107,7 @@
   left: 0;
   display: flex;
   align-items: center;
-  padding-left: 0.75rem;
+  padding-left: 1rem; /* ← Aumentado de 0.75rem a 1rem para más espacio */
   color: #6b7280; /* text-gray-500 - Mismo color gris claro */
 }
 
@@ -117,7 +117,7 @@
   border-radius: 0.5rem;
   border: 1px solid #d1d5db; /* border-gray-300 - Borde delgado y suave */
   background: #f9fafb; /* bg-gray-50 - Fondo gris muy claro */
-  padding: 0 0.75rem 0 2.5rem; /* Padding compacto */
+  padding: 0 0.75rem 0 2.75rem; /* ← Aumentado padding-left de 2.5rem a 2.75rem */
   font-size: 0.875rem; /* text-sm - Texto más pequeño */
   font-weight: 400; /* font-normal - Peso regular */
   height: 2.5rem;
