@@ -112,7 +112,33 @@ export default function Movements() {
       return 'cancelled';
     }
     
-    // Convertir explícitamente a número para evitar problemas de comparación
+    // Para VENTAS: Verificar el estado de las cuentas por cobrar
+    if (movement.processType === ProcessType.SALE && movement.receivables && movement.receivables.length > 0) {
+      const hasActiveReceivables = movement.receivables.some(r => 
+        r.status === 'PENDIENTE' && Number(r.balance) > 0
+      );
+      
+      if (hasActiveReceivables) {
+        return 'pending';  // Hay deuda activa del cliente
+      } else {
+        return 'paid';  // Todas las cuentas por cobrar han sido canceladas
+      }
+    }
+    
+    // Para COMPRAS: Verificar el estado de las cuentas por pagar
+    if (movement.processType === ProcessType.PURCHASE && movement.payables && movement.payables.length > 0) {
+      const hasActivePayables = movement.payables.some(p => 
+        p.status === 'PENDIENTE' && Number(p.balance) > 0
+      );
+      
+      if (hasActivePayables) {
+        return 'pending';  // Hay deuda activa con el proveedor
+      } else {
+        return 'paid';  // Todas las cuentas por pagar han sido canceladas
+      }
+    }
+    
+    // Para otros tipos de movimientos: usar la lógica de pagos directos
     const paymentsTotal = movement.payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
     const movementTotal = Number(movement.total);
     
