@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { movementsApi } from '../../api/movements.api';
 import { reportsApi } from '../../api/reports.api';
 import { productsApi } from '../../api/products.api';
@@ -13,6 +14,7 @@ type TimePeriod = '7days' | '30days';
 
 export default function DashboardNew() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('7days');
+  const navigate = useNavigate();
   
   // Usar fecha local (Colombia UTC-5) en lugar de UTC
   const getLocalDate = () => {
@@ -212,7 +214,7 @@ export default function DashboardNew() {
           <button className="btn-icon-round">
             <span className="material-icons">notifications</span>
           </button>
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" onClick={() => navigate('/movements')}>
             <span className="material-icons">add</span>
             Crear Movimiento
           </button>
