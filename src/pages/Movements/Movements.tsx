@@ -112,8 +112,22 @@ export default function Movements() {
       return 'cancelled';
     }
     
+    // DEBUG: Log para ver qué está pasando
+    console.log('🔍 DEBUG Movement:', {
+      consecutive: movement.consecutive,
+      total: movement.total,
+      payments: movement.payments,
+      paymentsCount: movement.payments?.length,
+    });
+    
     // Lógica simplificada: si el total de pagos >= total, está pagado
-    const paymentsTotal = movement.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+    const paymentsTotal = movement.payments?.reduce((sum, p) => {
+      console.log('  💰 Payment:', { method: p.method, amount: p.amount, isCredit: p.isCredit });
+      return sum + Number(p.amount);
+    }, 0) || 0;
+    
+    console.log('  📊 Total payments:', paymentsTotal, 'vs Total:', movement.total, '→', paymentsTotal >= movement.total ? 'PAGADO ✅' : 'PENDIENTE ⏳');
+    
     if (paymentsTotal >= movement.total) {
       return 'paid';
     }
