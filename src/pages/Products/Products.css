@@ -254,7 +254,7 @@
 
 .products-table tbody tr {
   background: #ffffff; /* bg-white */
-  border-bottom: 1px solid #1f2937; /* dark:border-gray-800 */
+  border-bottom: 1px solid #e5e7eb; /* border-gray-200 - Corregido de #1f2937 */
   transition: background-color 0.2s ease;
 }
 
