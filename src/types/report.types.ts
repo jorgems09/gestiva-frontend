@@ -1,10 +1,14 @@
 export interface ProfitabilityReport {
   from: string;
   to: string;
-  revenue: number;
-  cost: number;
-  grossMargin: number;
-  marginPercent: number;
+  revenue: number; // Ingresos totales (ventas)
+  cost: number; // Costos totales (compras)
+  expenses: number; // Gastos operativos
+  costOfGoodsSold: number; // Costo de productos vendidos
+  grossMargin: number; // Margen bruto (revenue - costOfGoodsSold)
+  grossMarginPercent: number; // % margen bruto
+  netProfit: number; // Utilidad neta (revenue - cost - expenses)
+  marginPercent: number; // % margen de rentabilidad neta
 }
 
 export interface ReceivableStatement {

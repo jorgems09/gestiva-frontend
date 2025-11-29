@@ -25,7 +25,7 @@ VITE_USER_EMAIL=admin@gestiva.com
 # Configuración de Branding (Personalización por cliente)
 VITE_COMPANY_NAME=Tu Empresa
 VITE_APP_NAME=Gestiva
-VITE_APP_SUBTITLE=Sistema ERP
+VITE_APP_SUBTITLE=Gestiva
 VITE_COMPANY_LOGO_PATH=/logo-empresa.svg
 VITE_COMPANY_LOGO_ALT=Logo de la empresa
 ```

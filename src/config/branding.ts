@@ -23,8 +23,8 @@ export const brandingConfig = {
   
   // Subtítulo de la aplicación
   // Variable de entorno: VITE_APP_SUBTITLE
-  // Valor por defecto: 'Sistema ERP'
-  appSubtitle: import.meta.env.VITE_APP_SUBTITLE || 'Sistema ERP',
+  // Valor por defecto: 'Gestiva'
+  appSubtitle: import.meta.env.VITE_APP_SUBTITLE || 'Gestiva',
   
   // Ruta del logo de la empresa (ubicado en /public)
   // Variable de entorno: VITE_COMPANY_LOGO_PATH

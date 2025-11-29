@@ -14,12 +14,24 @@ type TimePeriod = '7days' | '30days';
 export default function DashboardNew() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('7days');
   
-  const today = new Date().toISOString().split('T')[0];
-  const firstDayOfMonth = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    1,
-  ).toISOString().split('T')[0];
+  // Usar fecha local (Colombia UTC-5) en lugar de UTC
+  const getLocalDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getFirstDayOfMonth = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-01`;
+  };
+
+  const today = getLocalDate();
+  const firstDayOfMonth = getFirstDayOfMonth();
 
   // Queries
   const { data: movements, isLoading: movementsLoading } = useQuery({
@@ -50,17 +62,45 @@ export default function DashboardNew() {
   // Calcular KPIs
   const todaySales = dailyReport?.totals.find(t => t.process === 'VENTA')?.total || 0;
 
-  // Pedidos pendientes (aproximación: ventas recientes sin completar totalmente)
-  const pendingOrders = movements?.filter(m => 
-    m.processType === ProcessType.SALE && 
-    m.status === 1
-  ).length || 0;
+  // Pedidos pendientes (ventas con estado "pending")
+  const pendingOrders = movements?.filter(m => {
+    if (m.processType !== ProcessType.SALE || m.status !== 1) return false;
+    
+    // Verificar si tiene cuentas por cobrar pendientes
+    if (m.receivables && m.receivables.length > 0) {
+      return m.receivables.some((r: any) => r.status === 'PENDIENTE' && Number(r.balance) > 0);
+    }
+    
+    // Si no tiene receivables, verificar pagos
+    const paymentsTotal = m.payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
+    return Number(m.total) > paymentsTotal;
+  }).length || 0;
 
   // Productos con stock bajo (< 10)
   const lowStockCount = products?.filter(p => p.stock < 10).length || 0;
 
   // Ingresos del mes
   const monthRevenue = profitability?.revenue || 0;
+
+  // Gastos del mes desde el endpoint profitability
+  const monthExpensesFromApi = profitability?.expenses || 0;
+
+  // Utilidad neta del mes (ahora viene directamente del endpoint)
+  const netProfit = profitability?.netProfit || 0;
+
+  // Margen de rentabilidad (%) (ahora viene directamente del endpoint)
+  const profitMargin = profitability?.marginPercent || 0;
+
+  // Clasificación del margen
+  const getProfitMarginStatus = (margin: number): { label: string; variant: string } => {
+    if (margin >= 25) return { label: 'Excelente', variant: 'success-dark' };
+    if (margin >= 15) return { label: 'Saludable', variant: 'success' };
+    if (margin >= 10) return { label: 'Aceptable', variant: 'warning' };
+    if (margin >= 5) return { label: 'Crítico', variant: 'error' };
+    return { label: 'Pérdidas', variant: 'error-dark' };
+  };
+
+  const marginStatus = getProfitMarginStatus(profitMargin);
 
   // Movimientos recientes (últimos 5 activos)
   const recentMovements = movements
@@ -94,19 +134,46 @@ export default function DashboardNew() {
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 4);
 
-  // Función para obtener el status del movimiento (igual que en Movements)
+  // Función para obtener el status del movimiento (considerando receivables y payables)
   const getPaymentStatus = (movement: any): 'paid' | 'pending' | 'overdue' | 'cancelled' => {
     if (movement.status === 0 || movement.consecutive?.startsWith('ANL-')) {
       return 'cancelled';
     }
     
-    // Lógica simplificada: si el total de pagos >= total, está pagado
-    const paymentsTotal = movement.payments?.reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
-    if (paymentsTotal >= movement.total) {
+    // Para VENTAS: Verificar el estado de las cuentas por cobrar
+    if (movement.processType === ProcessType.SALE && movement.receivables && movement.receivables.length > 0) {
+      const hasActiveReceivables = movement.receivables.some((r: any) => 
+        r.status === 'PENDIENTE' && Number(r.balance) > 0
+      );
+      
+      if (hasActiveReceivables) {
+        return 'pending';  // Hay deuda activa del cliente
+      } else {
+        return 'paid';  // Todas las cuentas por cobrar han sido canceladas
+      }
+    }
+    
+    // Para COMPRAS: Verificar el estado de las cuentas por pagar
+    if (movement.processType === ProcessType.PURCHASE && movement.payables && movement.payables.length > 0) {
+      const hasActivePayables = movement.payables.some((p: any) => 
+        p.status === 'PENDIENTE' && Number(p.balance) > 0
+      );
+      
+      if (hasActivePayables) {
+        return 'pending';  // Hay deuda activa con el proveedor
+      } else {
+        return 'paid';  // Todas las cuentas por pagar han sido canceladas
+      }
+    }
+    
+    // Para otros tipos: usar la lógica de pagos directos
+    const paymentsTotal = movement.payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
+    const movementTotal = Number(movement.total);
+    
+    if (paymentsTotal >= movementTotal) {
       return 'paid';
     }
     
-    // Por defecto, pendiente
     return 'pending';
   };
 
@@ -154,33 +221,59 @@ export default function DashboardNew() {
 
       {/* KPI Cards */}
       <section className="kpi-grid">
-        <div className="kpi-card">
+        <div className="kpi-card" title="Total de ventas realizadas hoy">
           <p className="kpi-label">Ventas de Hoy</p>
           <p className="kpi-value">{formatCurrency(todaySales)}</p>
           <p className="kpi-change positive">{yesterdayComparison} vs ayer</p>
         </div>
 
-        <div className="kpi-card">
+        <div className="kpi-card" title="Ventas con pagos pendientes o cuentas por cobrar activas">
           <p className="kpi-label">Pedidos Pendientes</p>
           <p className="kpi-value">{pendingOrders}</p>
           <p className="kpi-change neutral">
-            {pendingOrders > 0 ? `${pendingOrders} sin completar` : 'Todo al día'}
+            {pendingOrders > 0 
+              ? `${pendingOrders} venta${pendingOrders !== 1 ? 's' : ''} sin completar` 
+              : 'Todo al día'}
           </p>
         </div>
 
-        <div className="kpi-card">
-          <p className="kpi-label">Stock Bajo</p>
+        <div className="kpi-card" title="Productos con menos de 10 unidades en inventario">
+          <p className="kpi-label">Stock Bajo (&lt;10 unidades)</p>
           <p className="kpi-value">{lowStockCount}</p>
           <p className="kpi-change negative">
-            {lowStockCount > 0 ? 'Necesita reposición' : 'Stock saludable'}
+            {lowStockCount > 0 
+              ? `${lowStockCount} producto${lowStockCount !== 1 ? 's' : ''} por reponer` 
+              : 'Stock saludable'}
           </p>
         </div>
 
-        <div className="kpi-card">
+        <div className="kpi-card" title="Total de ingresos generados en el mes actual">
           <p className="kpi-label">Ingresos del Mes</p>
           <p className="kpi-value">{formatCurrency(monthRevenue)}</p>
           <p className="kpi-change positive">
-            {profitability ? `${profitability.marginPercent.toFixed(1)}% margen` : 'Calculando...'}
+            {profitability ? `${profitability.marginPercent.toFixed(1)}% margen bruto` : 'Calculando...'}
+          </p>
+        </div>
+
+        <div className="kpi-card" title="Ganancia neta después de restar costos y gastos del mes">
+          <p className="kpi-label">Utilidad del Mes</p>
+          <p className={`kpi-value ${netProfit >= 0 ? 'kpi-value-positive' : 'kpi-value-negative'}`}>
+            {formatCurrency(netProfit)}
+          </p>
+          <p className={`kpi-change ${netProfit >= 0 ? 'positive' : 'negative'}`}>
+            {netProfit >= 0 ? '↗' : '↘'} {Math.abs(netProfit) > 0 
+              ? `${formatCurrency(Math.abs((profitability?.cost || 0) + monthExpensesFromApi))} en costos` 
+              : 'Sin movimientos'}
+          </p>
+        </div>
+
+        <div className="kpi-card" title="Porcentaje de ganancia sobre las ventas totales del mes">
+          <p className="kpi-label">Margen de Rentabilidad</p>
+          <p className={`kpi-value kpi-value-${marginStatus.variant}`}>
+            {profitMargin.toFixed(1)}%
+          </p>
+          <p className={`kpi-change ${marginStatus.variant === 'success-dark' || marginStatus.variant === 'success' ? 'positive' : marginStatus.variant === 'warning' ? 'neutral' : 'negative'}`}>
+            {marginStatus.label}
           </p>
         </div>
       </section>

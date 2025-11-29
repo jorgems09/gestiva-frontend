@@ -34,7 +34,7 @@ Usar variables de entorno permite personalizar el branding **sin modificar códi
    VITE_APP_NAME=Gestiva
    
    # Subtítulo de la aplicación
-   VITE_APP_SUBTITLE=Sistema ERP
+   VITE_APP_SUBTITLE=Gestiva
    
    # Ruta del logo
    VITE_COMPANY_LOGO_PATH=/logo-empresa.svg
@@ -55,7 +55,7 @@ Usar variables de entorno permite personalizar el branding **sin modificar códi
 |----------|-------------|-------------------|
 | `VITE_COMPANY_NAME` | Nombre de la empresa cliente | `'Tu Empresa'` |
 | `VITE_APP_NAME` | Nombre de la aplicación | `'Gestiva'` |
-| `VITE_APP_SUBTITLE` | Subtítulo de la aplicación | `'Sistema ERP'` |
+| `VITE_APP_SUBTITLE` | Subtítulo de la aplicación | `'Gestiva'` |
 | `VITE_COMPANY_LOGO_PATH` | Ruta del logo (en `/public`) | `'/logo-empresa.svg'` |
 | `VITE_COMPANY_LOGO_ALT` | Texto alternativo del logo | `'Logo de la empresa'` |
 
@@ -157,7 +157,7 @@ El nombre de la empresa aparecerá:
 Edita el archivo `.env.local`:
 ```env
 VITE_APP_NAME=Gestiva
-VITE_APP_SUBTITLE=Sistema ERP
+VITE_APP_SUBTITLE=Gestiva
 ```
 
 ### Método Alternativo: Código
@@ -237,7 +237,7 @@ gestiva-frontend/
 │                 │
 │  TU EMPRESA     │ ← Nombre de empresa (pequeño)
 │    Gestiva      │ ← Nombre de la app (grande)
-│  Sistema ERP    │ ← Subtítulo (pequeño)
+│  Gestiva    │ ← Subtítulo (pequeño)
 └─────────────────┘
 ```
 
@@ -246,7 +246,7 @@ gestiva-frontend/
 ┌─────────────────────┐
 │ [Logo] TU EMPRESA   │
 │       Gestiva       │
-│     Sistema ERP     │
+│     Gestiva     │
 └─────────────────────┘
 ```
 

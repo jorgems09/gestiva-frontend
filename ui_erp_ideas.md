@@ -1,6 +1,6 @@
 Ideas de Diseño UI/UX para un ERP de Tienda de Ropa Femenina
 
-Este documento presenta una propuesta de diseño para la interfaz de usuario (UI) de un sistema ERP, optimizado para ser completamente funcional y estético tanto en escritorio (Desktop) como en dispositivos móviles (Mobile-First).
+Este documento presenta una propuesta de diseño para la interfaz de usuario (UI) de un Gestiva, optimizado para ser completamente funcional y estético tanto en escritorio (Desktop) como en dispositivos móviles (Mobile-First).
 
 1. Principios de Diseño Clave
 
