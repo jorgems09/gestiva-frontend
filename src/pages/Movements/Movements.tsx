@@ -297,6 +297,17 @@ export default function Movements() {
               </button>
             </div>
 
+            {/* Header del negocio - Solo visible en impresión */}
+            <div className="pos-header">
+              <h1>TIENDA FEMENINA</h1>
+              <p>NIT: 123456789-0</p>
+              <p>Dirección: Calle Principal #123</p>
+              <p>Tel: (57) 300 123 4567</p>
+              <div className="pos-separator">━━━━━━━━━━━━━━━━━━━━</div>
+              <p className="modal-subtitle">{selectedMovement.consecutive}</p>
+              <div className="pos-separator">━━━━━━━━━━━━━━━━━━━━</div>
+            </div>
+
             <div className="modal-body">
               {/* Información General */}
               <div className="detail-section">

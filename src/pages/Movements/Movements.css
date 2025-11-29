@@ -543,6 +543,11 @@
   margin: 0;
 }
 
+/* Header POS - Oculto en pantalla, visible solo en impresión */
+.pos-header {
+  display: none;
+}
+
 .btn-close-modal {
   width: 40px;
   height: 40px;
@@ -1957,7 +1962,14 @@
 }
 
 /* Print Styles - Ocultar elementos innecesarios al imprimir */
+/* Print Styles - Formato Tirilla POS */
 @media print {
+  /* Configuración de página para tirilla POS (80mm) */
+  @page {
+    size: 80mm auto; /* Ancho fijo de 80mm, alto automático */
+    margin: 5mm; /* Márgenes mínimos */
+  }
+
   /* Ocultar todo excepto el modal de detalle */
   body * {
     visibility: hidden;
@@ -1969,30 +1981,83 @@
     visibility: visible;
   }
 
-  /* Posicionar el modal en la parte superior de la página */
+  /* Contenedor principal - Formato tirilla */
   .movement-detail-modal {
     position: absolute;
     left: 0;
     top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
+    width: 70mm; /* Ancho fijo para tirilla 80mm */
+    margin: 0 auto;
+    padding: 5mm;
     box-shadow: none;
     border: none;
+    font-family: 'Courier New', monospace; /* Fuente monospace tipo POS */
+    font-size: 9px; /* Fuente pequeña */
+    line-height: 1.2;
+    color: #000;
+    background: #fff;
   }
 
-  /* Ocultar overlay y botones */
+  /* Overlay transparente */
   .modal-overlay {
     position: static;
     background: transparent;
   }
 
+  /* Ocultar botones y elementos innecesarios */
   .modal-header .btn-close-modal,
-  .modal-footer {
+  .modal-footer,
+  .modal-header h2 {
     display: none !important;
   }
 
-  /* Ajustar estilos del modal para impresión */
+  /* Header del ticket - Centrado */
+  .modal-header {
+    text-align: center;
+    border-bottom: 1px dashed #000;
+    padding-bottom: 5mm;
+    margin-bottom: 5mm;
+  }
+
+  .modal-subtitle {
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  /* Header del negocio - Solo visible en impresión */
+  .pos-header {
+    display: block;
+    text-align: center;
+    margin-bottom: 5mm;
+    padding-bottom: 3mm;
+    border-bottom: 1px dashed #000;
+  }
+
+  .pos-header h1 {
+    font-size: 14px;
+    font-weight: bold;
+    margin: 0 0 2mm 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .pos-header p {
+    font-size: 8px;
+    margin: 1mm 0;
+    line-height: 1.3;
+  }
+
+  .pos-separator {
+    font-size: 10px;
+    margin: 2mm 0;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  /* Cuerpo del ticket */
   .modal-content {
     box-shadow: none;
     border: none;
@@ -2003,6 +2068,155 @@
     padding: 0;
   }
 
+  /* Secciones del ticket */
+  .detail-section {
+    margin-bottom: 5mm;
+    page-break-inside: avoid;
+  }
+
+  .detail-section h3 {
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+    border-top: 1px dashed #000;
+    border-bottom: 1px dashed #000;
+    padding: 2mm 0;
+    margin: 3mm 0;
+    text-transform: uppercase;
+  }
+
+  /* Grid de información - Una columna */
+  .detail-grid {
+    display: block;
+  }
+
+  .detail-item {
+    display: block;
+    margin-bottom: 2mm;
+    font-size: 9px;
+  }
+
+  .detail-item.full-width {
+    width: 100%;
+  }
+
+  .detail-label {
+    font-weight: bold;
+    display: inline-block;
+    min-width: 30mm;
+  }
+
+  .detail-value {
+    display: inline-block;
+  }
+
+  /* Status badges - Solo texto */
+  .status-badge,
+  .detail-value .status-badge {
+    background: transparent !important;
+    color: #000 !important;
+    border: 1px solid #000;
+    padding: 1px 3px;
+    font-size: 7px;
+    display: inline-block;
+  }
+
+  /* Tablas compactas */
+  .detail-table-container {
+    overflow: visible;
+  }
+
+  .detail-table {
+    width: 100%;
+    font-size: 8px;
+    border-collapse: collapse;
+    margin: 2mm 0;
+    page-break-inside: avoid;
+  }
+
+  .detail-table thead {
+    display: none; /* Ocultar encabezados en tirilla */
+  }
+
+  .detail-table tbody tr {
+    border-bottom: 1px dotted #000;
+    page-break-inside: avoid;
+  }
+
+  .detail-table td {
+    padding: 1mm;
+    vertical-align: top;
+  }
+
+  .detail-table td:first-child {
+    width: 60%;
+  }
+
+  .detail-table td:not(:first-child) {
+    text-align: right;
+    width: auto;
+  }
+
+  /* Productos */
+  .product-detail {
+    display: block;
+  }
+
+  .product-ref {
+    display: block;
+    font-weight: bold;
+    font-size: 8px;
+  }
+
+  .product-desc {
+    display: block;
+    font-size: 7px;
+    color: #333;
+  }
+
+  /* Totales - Resaltados */
+  .totals-grid {
+    display: block;
+    border-top: 2px solid #000;
+    margin-top: 3mm;
+    padding-top: 3mm;
+  }
+
+  .total-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1mm;
+    font-size: 9px;
+  }
+
+  .total-item.total-final {
+    border-top: 1px solid #000;
+    padding-top: 2mm;
+    margin-top: 2mm;
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  .total-label {
+    font-weight: bold;
+  }
+
+  .total-value {
+    font-weight: bold;
+  }
+
+  .total-value.text-red {
+    color: #000 !important; /* En impresión, todo en negro */
+  }
+
+  /* Líneas separadoras */
+  .detail-section:not(:last-child)::after {
+    content: '';
+    display: block;
+    border-bottom: 1px dashed #000;
+    margin-top: 3mm;
+  }
+
   /* Ocultar elementos de la página principal */
   .page-header-new,
   .movements-filters,
@@ -2011,14 +2225,16 @@
     display: none !important;
   }
 
-  /* Asegurar que las tablas se impriman correctamente */
-  .detail-table {
+  /* Evitar saltos de página */
+  .detail-section,
+  .detail-table tbody tr {
     page-break-inside: avoid;
   }
 
-  .detail-section {
-    page-break-inside: avoid;
-    margin-bottom: 1rem;
+  /* Asegurar que el texto se ajuste */
+  * {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 }
 
