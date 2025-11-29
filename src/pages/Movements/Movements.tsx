@@ -112,28 +112,14 @@ export default function Movements() {
       return 'cancelled';
     }
     
-    // DEBUG: Log para ver qué está pasando
-    console.log('🔍 DEBUG Movement:', {
-      consecutive: movement.consecutive,
-      total: movement.total,
-      payments: movement.payments,
-      paymentsCount: movement.payments?.length,
-    });
+    // Convertir explícitamente a número para evitar problemas de comparación
+    const paymentsTotal = movement.payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+    const movementTotal = Number(movement.total);
     
-    // Lógica simplificada: si el total de pagos >= total, está pagado
-    const paymentsTotal = movement.payments?.reduce((sum, p) => {
-      console.log('  💰 Payment:', { method: p.method, amount: p.amount, isCredit: p.isCredit });
-      return sum + Number(p.amount);
-    }, 0) || 0;
-    
-    console.log('  📊 Total payments:', paymentsTotal, 'vs Total:', movement.total, '→', paymentsTotal >= movement.total ? 'PAGADO ✅' : 'PENDIENTE ⏳');
-    
-    if (paymentsTotal >= movement.total) {
+    if (paymentsTotal >= movementTotal) {
       return 'paid';
     }
     
-    // Si hay fecha de vencimiento y está vencida, está vencido
-    // Por ahora, asumimos que si no está pagado completamente, está pendiente
     return 'pending';
   };
 
@@ -734,8 +720,6 @@ export default function Movements() {
                   <tbody>
                     {paginatedMovements.map((movement) => {
                       const paymentStatus = getPaymentStatus(movement);
-                      console.log(`🎨 Rendering ${movement.consecutive}: status="${paymentStatus}"`);
-                      
                       const thirdPartyName =
                         movement.processType === ProcessType.PURCHASE ||
                         movement.processType === ProcessType.EXPENSE
