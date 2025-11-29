@@ -734,6 +734,8 @@ export default function Movements() {
                   <tbody>
                     {paginatedMovements.map((movement) => {
                       const paymentStatus = getPaymentStatus(movement);
+                      console.log(`🎨 Rendering ${movement.consecutive}: status="${paymentStatus}"`);
+                      
                       const thirdPartyName =
                         movement.processType === ProcessType.PURCHASE ||
                         movement.processType === ProcessType.EXPENSE
