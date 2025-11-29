@@ -92,7 +92,7 @@
   }
 }
 
-/* Search Input - Estilo idéntico a Productos - v4 */
+/* Search Input - EXACTO a Productos - FORCE RELOAD v2 */
 .search-input-wrapper {
   position: relative;
   flex: 1;
@@ -107,35 +107,32 @@
   left: 0;
   display: flex;
   align-items: center;
-  padding-left: 0.75rem; /* ← Reducido: ícono más cerca del borde izquierdo */
-  color: #6b7280; /* text-gray-500 - Mismo color gris claro */
+  padding-left: 0.5rem; /* ← Reducido: ícono más cerca del borde izquierdo */
+  color: #6b7280 !important; /* text-gray-500 - FORCE */
 }
 
 .search-input {
-  display: block;
-  width: 100%;
-  border-radius: 0.5rem;
-  border: 1px solid #d1d5db; /* border-gray-300 - Borde delgado y suave */
-  background: #f9fafb; /* bg-gray-50 - Fondo gris muy claro */
-  padding: 0 0.75rem 0 3rem; /* ← Aumentado padding-left a 3rem para más espacio entre ícono y texto */
-  font-size: 0.875rem; /* text-sm - Texto más pequeño */
-  font-weight: 400; /* font-normal - Peso regular */
-  height: 2.5rem;
-  line-height: 2.5rem;
-  color: #111827; /* text-gray-900 - Color del texto */
+  display: block !important;
+  width: 100% !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid #d1d5db !important; /* border-gray-300 */
+  background: #f9fafb !important; /* bg-gray-50 */
+  padding-left: 3rem !important; /* ← Aumentado: más espacio entre ícono y texto */
+  padding-right: 0.75rem !important;
+  font-size: 0.875rem !important;
+  height: 2.5rem !important;
+  color: #111827 !important; /* dark:text-white */
   transition: all 0.2s ease;
 }
 
 .search-input:focus {
-  outline: none;
-  border-color: var(--color-primary); /* focus:border-primary */
-  box-shadow: 0 0 0 3px var(--color-primary-alpha-10); /* focus:ring-primary */
+  outline: none !important;
+  border-color: var(--color-primary) !important; /* focus:border-primary */
+  box-shadow: 0 0 0 3px var(--color-primary-alpha-10) !important; /* focus:ring-primary */
 }
 
 .search-input::placeholder {
-  color: #6b7280; /* text-gray-500 - Placeholder gris claro */
-  font-weight: 400; /* font-normal - Peso regular */
-  font-size: 0.875rem;
+  color: #6b7280 !important;
 }
 
 .filter-actions {
