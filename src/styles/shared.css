@@ -167,8 +167,8 @@
 .page-header h1 {
   margin: 0;
   color: var(--color-text);
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
+  font-size: 2rem; /* 32px - Estandarizado */
+  font-weight: 900; /* Estandarizado - font-black */
 }
 
 /* Responsive Tables */

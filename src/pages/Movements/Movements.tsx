@@ -12,7 +12,7 @@ import DateRangePicker from '../../components/common/DateRangePicker';
 import Pagination from '../../components/common/Pagination';
 import StatusBadge from '../../components/common/StatusBadge';
 import { useToast } from '../../hooks/useToast';
-import { useBusinessInfo } from '../../hooks/useBusinessInfo';
+import { useBusinessInfoContext } from '../../contexts/BusinessInfoContext';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { ProcessType, PROCESS_TYPE_LABELS } from '../../constants/process-types';
 import type { CreateMovementDto, MovementDetail, PaymentDetail, RelatedAccountDto, MovementHeader } from '../../types/movement.types';
@@ -32,7 +32,7 @@ export default function Movements() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const queryClient = useQueryClient();
-  const { businessInfo } = useBusinessInfo();
+  const { businessInfo } = useBusinessInfoContext();
 
   // Escuchar evento del botón del sidebar
   useEffect(() => {
@@ -335,8 +335,7 @@ export default function Movements() {
                     <span className="detail-label">Estado:</span>
                     <span className="detail-value">
                       <StatusBadge
-                        variant={getPaymentStatus(selectedMovement) === 'paid' ? 'success' : 'warning'}
-                        label={getPaymentStatus(selectedMovement) === 'paid' ? 'Pagado' : 'Pendiente'}
+                        status={getPaymentStatus(selectedMovement)}
                       />
                     </span>
                   </div>
@@ -362,6 +361,34 @@ export default function Movements() {
                         </span>
                       </div>
                     )}
+                  {selectedMovement.expenseCategory && (
+                    <div className="detail-item">
+                      <span className="detail-label">Categoría de Gasto:</span>
+                      <span className="detail-value">{selectedMovement.expenseCategory}</span>
+                    </div>
+                  )}
+                  {selectedMovement.expenseCategory === 'ENVIO' && (
+                    <>
+                      {selectedMovement.originLocation && (
+                        <div className="detail-item">
+                          <span className="detail-label">Origen:</span>
+                          <span className="detail-value">{selectedMovement.originLocation}</span>
+                        </div>
+                      )}
+                      {selectedMovement.destinationLocation && (
+                        <div className="detail-item">
+                          <span className="detail-label">Destino:</span>
+                          <span className="detail-value">{selectedMovement.destinationLocation}</span>
+                        </div>
+                      )}
+                      {selectedMovement.relatedMovementId && (
+                        <div className="detail-item">
+                          <span className="detail-label">Movimiento Relacionado:</span>
+                          <span className="detail-value">ID: {selectedMovement.relatedMovementId}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
                   {selectedMovement.notes && (
                     <div className="detail-item full-width">
                       <span className="detail-label">Notas:</span>
@@ -669,22 +696,32 @@ function MovementForm({
   };
   const [documentDate, setDocumentDate] = useState(getLocalDateString());
   const [clientCode, setClientCode] = useState('');
+  const [clientName, setClientName] = useState(''); // Para crear cliente nuevo
+  const [clientEmail, setClientEmail] = useState(''); // Para crear cliente nuevo
+  const [clientPhone, setClientPhone] = useState(''); // Para crear cliente nuevo
+  const [isNewClient, setIsNewClient] = useState(false); // Flag para indicar si es cliente nuevo
   const [supplierCode, setSupplierCode] = useState('');
   const [notes, setNotes] = useState('');
-  const [retentionRate, setRetentionRate] = useState<number | undefined>(undefined);
-  const [deductionRate, setDeductionRate] = useState<number | undefined>(undefined);
+  const [retentionRate, setRetentionRate] = useState<number>(0);
+  const [deductionRate, setDeductionRate] = useState<number>(0);
+  const [expenseCategory, setExpenseCategory] = useState<string>('');
+  const [originLocation, setOriginLocation] = useState('');
+  const [destinationLocation, setDestinationLocation] = useState('');
+  const [relatedMovementId, setRelatedMovementId] = useState<number | undefined>(undefined);
   const [details, setDetails] = useState<MovementDetail[]>([
       {
         productReference: '',
         description: '',
         quantity: 1,
         unitPrice: 0,
-        taxRate: 19, // Valor por defecto: 19%
+        taxRate: 0, // Valor por defecto: 0%
       },
   ]);
+  const [newProducts, setNewProducts] = useState<Set<number>>(new Set()); // Índices de productos nuevos
   const [payments, setPayments] = useState<PaymentDetail[]>([
     { method: 'EFECTIVO', amount: 0, isCredit: false },
   ]);
+  const [paymentInputValues, setPaymentInputValues] = useState<{ [key: number]: string }>({});
   const [selectedReceivables, setSelectedReceivables] = useState<RelatedAccountDto[]>([]);
 
   const { data: clients } = useQuery({
@@ -716,6 +753,12 @@ function MovementForm({
       return { subtotal: 0, taxTotal: 0, retentionTotal: 0, deductionTotal: 0, total };
     }
 
+    // Para EXPENSE con categoría ENVIO, el total viene de los pagos
+    if (processType === ProcessType.EXPENSE && expenseCategory === 'ENVIO') {
+      const total = payments.reduce((sum, p) => sum + p.amount, 0);
+      return { subtotal: 0, taxTotal: 0, retentionTotal: 0, deductionTotal: 0, total };
+    }
+
     let subtotal = 0;
     let taxTotal = 0;
     let retentionTotal = 0;
@@ -725,19 +768,18 @@ function MovementForm({
       const baseAmount = detail.quantity * detail.unitPrice;
       const discountRate = detail.discountRate || 0;
       const discounted = baseAmount * (1 - discountRate / 100);
-      // Si taxRate es undefined, usar 19% (default); si es 0, aplicar 0% (sin IVA)
-      const taxRateValue = detail.taxRate !== undefined ? detail.taxRate : 19;
+      // Si taxRate es undefined, usar 0% (default); si es 0, aplicar 0% (sin IVA)
+      const taxRateValue = detail.taxRate !== undefined ? detail.taxRate : 0;
       const taxRate = taxRateValue / 100;
       const taxAmount = discounted * taxRate;
       subtotal += discounted;
       taxTotal += taxAmount;
 
       // Para compras, aplicar retenciones y deducciones según configuración
-      // Si no se especifican, usar defaults (2.5% y 1%)
-      // Si se especifican como 0, no aplicar
+      // Usar el valor configurado (0 por defecto)
       if (processType === ProcessType.PURCHASE) {
-        const finalRetentionRate = retentionRate !== undefined ? retentionRate : 2.5;
-        const finalDeductionRate = deductionRate !== undefined ? deductionRate : 1.0;
+        const finalRetentionRate = retentionRate || 0;
+        const finalDeductionRate = deductionRate || 0;
         
         if (finalRetentionRate > 0) {
           const retention = discounted * (finalRetentionRate / 100);
@@ -770,14 +812,18 @@ function MovementForm({
       if (Math.abs(currentAmount - total) > 0.01) {
         // Redondear a 2 decimales para evitar problemas de precisión
         const roundedTotal = Math.round(total * 100) / 100;
+        // Sincronizar el monto del pago con el total calculado
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPayments([{ ...payments[0], amount: roundedTotal }]);
       }
     }
-  }, [total]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [total, payments]);
 
   // Limpiar cuentas seleccionadas cuando cambia el cliente o el tipo de proceso
   useEffect(() => {
     if (processType !== ProcessType.RECEIPT || !clientCode) {
+      // Limpiar selección cuando cambia el contexto del formulario
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedReceivables([]);
     }
   }, [processType, clientCode]);
@@ -804,6 +850,103 @@ function MovementForm({
   };
 
   // Validación en tiempo real de stock
+  // Generar referencia automática basada en la descripción
+  const generateReferenceFromDescription = (description: string): string => {
+    if (!description || description.trim() === '') return '';
+    
+    // Palabras comunes a ignorar (artículos, preposiciones, etc.)
+    const stopWords = new Set([
+      'DE', 'LA', 'EL', 'LOS', 'LAS', 'UN', 'UNA', 'UNOS', 'UNAS',
+      'Y', 'O', 'CON', 'SIN', 'PARA', 'POR', 'SOBRE', 'BAJO',
+      'DEL', 'AL', 'EN', 'A', 'ES', 'SON', 'ESTA', 'ESTE', 'ESTO'
+    ]);
+    
+    // Limpiar y normalizar la descripción
+    const cleanDesc = description
+      .trim()
+      .toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+      .replace(/[^A-Z0-9\s]/g, '') // Eliminar caracteres especiales
+      .replace(/\s+/g, ' '); // Normalizar espacios
+    
+    // Dividir en palabras, filtrar vacías, stop words y duplicados
+    const allWords = cleanDesc.split(' ').filter(w => w.length > 0);
+    const uniqueWords: string[] = [];
+    const seenWords = new Set<string>();
+    
+    for (const word of allWords) {
+      // Ignorar stop words y palabras muy cortas (menos de 2 caracteres)
+      if (word.length < 2 || stopWords.has(word)) continue;
+      
+      // Evitar duplicados (case-insensitive)
+      const wordLower = word.toLowerCase();
+      if (!seenWords.has(wordLower)) {
+        seenWords.add(wordLower);
+        uniqueWords.push(word);
+      }
+    }
+    
+    if (uniqueWords.length === 0) {
+      // Si no hay palabras válidas, usar las primeras letras de la descripción
+      const fallback = cleanDesc.replace(/\s/g, '').substring(0, 8);
+      return fallback || 'PROD';
+    }
+    
+    // Tomar máximo 4 palabras únicas
+    const selectedWords = uniqueWords.slice(0, 4);
+    
+    // Generar prefijos inteligentes: más letras para palabras cortas, menos para largas
+    const prefixes = selectedWords.map(word => {
+      if (word.length <= 3) {
+        // Palabra corta: usar toda la palabra
+        return word;
+      } else if (word.length <= 5) {
+        // Palabra mediana: usar 4 letras
+        return word.substring(0, 4);
+      } else {
+        // Palabra larga: usar 3 letras
+        return word.substring(0, 3);
+      }
+    });
+    
+    // Unir con guiones y limitar longitud total
+    let reference = prefixes.join('-');
+    
+    // Limitar a 25 caracteres máximo (permitir más que antes para mejor legibilidad)
+    if (reference.length > 25) {
+      // Si es muy largo, reducir prefijos progresivamente
+      const shortened = prefixes.map(p => {
+        if (p.length > 3) return p.substring(0, 3);
+        return p;
+      });
+      reference = shortened.join('-').substring(0, 25);
+    }
+    
+    // Asegurar que la referencia esté en mayúsculas
+    reference = reference.toUpperCase();
+    
+    // Verificar si ya existe y agregar número si es necesario
+    const existing = products?.find(p => p.reference === reference);
+    if (existing) {
+      // Si existe, agregar un número secuencial
+      let counter = 1;
+      let newRef = `${reference}-${counter}`.toUpperCase();
+      while (products?.find(p => p.reference === newRef)) {
+        counter++;
+        newRef = `${reference}-${counter}`.toUpperCase();
+        // Limitar longitud total con contador
+        if (newRef.length > 30) {
+          const baseRef = reference.substring(0, 25);
+          newRef = `${baseRef}-${counter}`.toUpperCase();
+        }
+      }
+      return newRef;
+    }
+    
+    return reference;
+  };
+
   const validateStock = (detail: MovementDetail, productRef: string): string => {
     if (!productRef || !products) return '';
     const product = products.find((p) => p.reference === productRef);
@@ -817,8 +960,12 @@ function MovementForm({
 
   const handleProductChange = (index: number, productRef: string) => {
     const product = products?.find((p) => p.reference === productRef);
+    const newDetails = [...details];
+    const newNewProducts = new Set(newProducts);
+    
     if (product) {
-      const newDetails = [...details];
+      // Producto existe
+      newNewProducts.delete(index);
       
       // Para compras: el precio unitario debe ser el costo del producto (precio de compra)
       // Para ventas: el precio unitario debe ser el precio de venta del producto
@@ -844,9 +991,47 @@ function MovementForm({
         description: product.description,
         unitPrice: initialUnitPrice,
         unitCost: initialUnitCost,
+        productSalePrice: undefined, // Limpiar precio de venta si el producto existe
       };
-      setDetails(newDetails);
+    } else if (productRef && processType === ProcessType.PURCHASE) {
+      // Producto no existe y es compra - permitir crear nuevo
+      newNewProducts.add(index);
+      const currentDescription = newDetails[index].description || '';
+      
+      // Si el productRef parece ser una descripción (contiene espacios o es muy largo), usarlo como descripción
+      const isDescriptionLike = productRef.includes(' ') || productRef.length > 15;
+      
+      let finalDescription = '';
+      let autoReference = '';
+      
+      if (isDescriptionLike) {
+        // Es una descripción: usar como descripción y generar referencia automática
+        finalDescription = productRef;
+        autoReference = generateReferenceFromDescription(productRef) || productRef.toUpperCase().replace(/\s+/g, '-').substring(0, 20);
+      } else {
+        // Parece una referencia: usar como referencia y mantener descripción actual o usar la referencia como descripción
+        autoReference = productRef.toUpperCase();
+        finalDescription = currentDescription || productRef;
+      }
+      
+      newDetails[index] = {
+        ...newDetails[index],
+        productReference: autoReference,
+        description: finalDescription,
+        // No cambiar unitPrice, dejar que el usuario lo ingrese
+      };
+    } else if (productRef && processType !== ProcessType.PURCHASE) {
+      // Producto no existe y no es compra - mostrar advertencia pero permitir continuar
+      // El backend lanzará error si intenta crear
+      newNewProducts.delete(index);
+      newDetails[index] = {
+        ...newDetails[index],
+        productReference: productRef,
+      };
     }
+    
+    setDetails(newDetails);
+    setNewProducts(newNewProducts);
   };
 
   const handleDetailChange = (
@@ -855,7 +1040,24 @@ function MovementForm({
     value: number | string | undefined
   ) => {
     const newDetails = [...details];
-    newDetails[index] = { ...newDetails[index], [field]: value };
+    const isNewProduct = newProducts.has(index);
+    
+    // Si es un producto nuevo y se cambia la descripción, generar referencia automática
+    if (isNewProduct && field === 'description' && typeof value === 'string' && value.trim() !== '') {
+      const autoReference = generateReferenceFromDescription(value);
+      if (autoReference) {
+        newDetails[index] = { 
+          ...newDetails[index], 
+          [field]: value,
+          productReference: autoReference
+        };
+      } else {
+        newDetails[index] = { ...newDetails[index], [field]: value };
+      }
+    } else {
+      newDetails[index] = { ...newDetails[index], [field]: value };
+    }
+    
     setDetails(newDetails);
   };
 
@@ -867,7 +1069,7 @@ function MovementForm({
         description: '',
         quantity: 1,
         unitPrice: 0,
-        taxRate: 19, // Valor por defecto: 19%
+        taxRate: 0, // Valor por defecto: 0%
       },
     ]);
   };
@@ -875,6 +1077,18 @@ function MovementForm({
   const removeDetail = (index: number) => {
     if (details.length > 1) {
       setDetails(details.filter((_, i) => i !== index));
+      const newNewProducts = new Set(newProducts);
+      newNewProducts.delete(index);
+      // Ajustar índices de productos nuevos después de eliminar
+      const adjustedNewProducts = new Set<number>();
+      newNewProducts.forEach((idx) => {
+        if (idx > index) {
+          adjustedNewProducts.add(idx - 1);
+        } else if (idx < index) {
+          adjustedNewProducts.add(idx);
+        }
+      });
+      setNewProducts(adjustedNewProducts);
     }
   };
 
@@ -911,6 +1125,22 @@ function MovementForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validaciones específicas para SALE
+    if (processType === ProcessType.SALE) {
+      if (!clientCode) {
+        showToast('Debe seleccionar un cliente para crear una venta', 'error');
+        return;
+      }
+    }
+
+    // Validaciones específicas para PURCHASE
+    if (processType === ProcessType.PURCHASE) {
+      if (!supplierCode) {
+        showToast('Debe seleccionar un proveedor para crear una compra', 'error');
+        return;
+      }
+    }
+
     // Validaciones específicas para RECEIPT
     if (processType === ProcessType.RECEIPT) {
       if (!clientCode) {
@@ -944,6 +1174,25 @@ function MovementForm({
         );
         return;
       }
+    }
+
+    // Validaciones específicas para EXPENSE con categoría ENVIO
+    if (processType === ProcessType.EXPENSE && expenseCategory === 'ENVIO') {
+      if (!originLocation || !destinationLocation) {
+        showToast('Los gastos de envío requieren origen y destino', 'error');
+        return;
+      }
+      if (originLocation === destinationLocation) {
+        showToast('El origen y destino del envío deben ser diferentes', 'error');
+        return;
+      }
+      if (paymentsTotal <= 0) {
+        showToast('Debe ingresar al menos un pago para el gasto de envío', 'error');
+        return;
+      }
+    } else if (processType === ProcessType.EXPENSE) {
+      // Para otros tipos de EXPENSE, validar que haya payables o que no sea ENVIO
+      // (esto se maneja en el backend)
     } else {
       // Validaciones para otros tipos de movimiento
       // Validar que todos los detalles tengan productos
@@ -975,11 +1224,19 @@ function MovementForm({
       processType,
       documentDate,
       clientCode: clientCode || undefined,
+      clientName: isNewClient && clientName ? clientName : undefined,
+      clientEmail: isNewClient && clientEmail ? clientEmail : undefined,
+      clientPhone: isNewClient && clientPhone ? clientPhone : undefined,
       supplierCode: supplierCode || undefined,
       notes: notes || undefined,
-      retentionRate: retentionRate !== undefined ? retentionRate : undefined,
-      deductionRate: deductionRate !== undefined ? deductionRate : undefined,
-      details: processType === ProcessType.RECEIPT ? [] : details.map((d) => ({
+      // Enviar 0 explícitamente para compras cuando el valor es 0, para que el backend no use valores por defecto
+      retentionRate: processType === ProcessType.PURCHASE ? retentionRate : undefined,
+      deductionRate: processType === ProcessType.PURCHASE ? deductionRate : undefined,
+      expenseCategory: expenseCategory || undefined,
+      originLocation: originLocation || undefined,
+      destinationLocation: destinationLocation || undefined,
+      relatedMovementId: relatedMovementId || undefined,
+      details: processType === ProcessType.RECEIPT || (processType === ProcessType.EXPENSE && expenseCategory === 'ENVIO') ? [] : details.map((d) => ({
         productReference: d.productReference,
         description: d.description,
         quantity: d.quantity,
@@ -988,6 +1245,7 @@ function MovementForm({
         discountRate: d.discountRate,
         taxRate: d.taxRate,
         weight: d.weight,
+        productSalePrice: d.productSalePrice,
       })),
       payments: payments.map((p) => ({
         method: p.method,
@@ -1074,35 +1332,100 @@ function MovementForm({
                 </div>
 
                 {needsClient && (
-                  <div className="form-group">
-                    <label>Cliente {processType === ProcessType.RECEIPT && <span className="required">*</span>}</label>
-                    <SearchableSelect
-                      options={
-                        clients?.map((c) => ({
-                          value: c.code,
-                          label: `${c.code} - ${c.name}`,
-                        })) || []
-                      }
-                      value={clientCode}
-                      onChange={setClientCode}
-                      placeholder="Buscar cliente..."
-                      searchPlaceholder="Escriba para buscar..."
-                    />
-                    {processType === ProcessType.RECEIPT && receivablesData && (
-                      <div className="receivables-info">
-                        <span className="material-icons info-icon">info</span>
-                        <span>
-                          Saldo total: <strong>{formatCurrency(receivablesData.balance)}</strong> |{' '}
-                          {receivablesData.items.length} cuenta(s) pendiente(s)
-                        </span>
+                  <>
+                    <div className="form-group">
+                      <label>Cliente {(processType === ProcessType.SALE || processType === ProcessType.RECEIPT) && <span className="required">*</span>}</label>
+                      <SearchableSelect
+                        options={
+                          clients?.map((c) => ({
+                            value: c.code,
+                            label: `${c.code} - ${c.name}`,
+                          })) || []
+                        }
+                        value={clientCode}
+                        onChange={(value) => {
+                          setClientCode(value);
+                          // Verificar si el cliente existe
+                          const clientExists = clients?.some((c) => c.code === value);
+                          if (value && !clientExists && processType === ProcessType.SALE) {
+                            setIsNewClient(true);
+                          } else {
+                            setIsNewClient(false);
+                            setClientName('');
+                            setClientEmail('');
+                            setClientPhone('');
+                          }
+                        }}
+                        placeholder="Buscar cliente o ingresar código nuevo..."
+                        searchPlaceholder="Escriba para buscar o crear nuevo..."
+                        allowCustomValue={processType === ProcessType.SALE}
+                      />
+                      {processType === ProcessType.RECEIPT && receivablesData && (
+                        <div className="receivables-info">
+                          <span className="material-icons info-icon">info</span>
+                          <span>
+                            Saldo total: <strong>{formatCurrency(receivablesData.balance)}</strong> |{' '}
+                            {receivablesData.items.length} cuenta(s) pendiente(s)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Campos para crear cliente nuevo (solo en ventas) */}
+                    {isNewClient && processType === ProcessType.SALE && clientCode && (
+                      <div className="form-card" style={{ marginTop: '1rem', border: '2px solid var(--color-primary)', backgroundColor: 'var(--color-primary-lighter)' }}>
+                        <h3 className="form-card-title" style={{ fontSize: '0.9rem', marginBottom: '0.75rem' }}>
+                          <span className="material-icons" style={{ fontSize: '1.2rem', verticalAlign: 'middle', marginRight: '0.5rem' }}>add_circle</span>
+                          Crear Cliente Nuevo
+                        </h3>
+                        <div className="form-grid-2col">
+                          <div className="form-group">
+                            <label>Nombre del Cliente <span className="required">*</span></label>
+                            <input
+                              type="text"
+                              value={clientName}
+                              onChange={(e) => setClientName(e.target.value)}
+                              placeholder="Nombre completo del cliente"
+                              className="form-input"
+                              required
+                              maxLength={120}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Email</label>
+                            <input
+                              type="email"
+                              value={clientEmail}
+                              onChange={(e) => setClientEmail(e.target.value)}
+                              placeholder="cliente@ejemplo.com"
+                              className="form-input"
+                              maxLength={60}
+                            />
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label>Teléfono</label>
+                          <input
+                            type="text"
+                            value={clientPhone}
+                            onChange={(e) => setClientPhone(e.target.value)}
+                            placeholder="+57 300 123 4567"
+                            className="form-input"
+                            maxLength={30}
+                          />
+                        </div>
+                        <div className="info-message" style={{ marginTop: '0.5rem', padding: '0.5rem', fontSize: '0.85rem' }}>
+                          <span className="material-icons" style={{ fontSize: '1rem' }}>info</span>
+                          <span>El cliente se creará automáticamente al guardar la venta</span>
+                        </div>
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
 
                 {needsSupplier && (
                   <div className="form-group">
-                    <label>Proveedor</label>
+                    <label>Proveedor {processType === ProcessType.PURCHASE && <span className="required">*</span>}</label>
                     <SearchableSelect
                       options={
                         suppliers?.map((s) => ({
@@ -1125,36 +1448,133 @@ function MovementForm({
                     <label>% Retención</label>
                     <input
                       type="number"
-                      step="0.01"
+                      step="1"
                       min="0"
                       max="100"
-                      value={retentionRate !== undefined ? retentionRate : ''}
+                      value={retentionRate}
                       onChange={(e) => {
-                        const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                        setRetentionRate(value !== undefined && !isNaN(value) ? value : undefined);
+                        const inputValue = e.target.value;
+                        // Si está vacío, mantener 0; si tiene valor, reemplazar completamente
+                        if (inputValue === '') {
+                          setRetentionRate(0);
+                        } else {
+                          const numValue = parseFloat(inputValue);
+                          if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                            setRetentionRate(numValue);
+                          }
+                        }
                       }}
-                      placeholder="2.5 (default)"
+                      onFocus={(e) => {
+                        // Al enfocar, seleccionar todo el texto para facilitar el reemplazo
+                        e.target.select();
+                      }}
+                      placeholder="0"
                       className="form-input"
                     />
-                    <small className="form-hint">Deje vacío para usar 2.5% (default) o ingrese 0 para sin retención</small>
+                    <small className="form-hint">Ingrese el porcentaje de retención (0 por defecto)</small>
                   </div>
                   <div className="form-group">
                     <label>% Deducción</label>
                     <input
                       type="number"
-                      step="0.01"
+                      step="1"
                       min="0"
                       max="100"
-                      value={deductionRate !== undefined ? deductionRate : ''}
+                      value={deductionRate}
                       onChange={(e) => {
-                        const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                        setDeductionRate(value !== undefined && !isNaN(value) ? value : undefined);
+                        const inputValue = e.target.value;
+                        // Si está vacío, mantener 0; si tiene valor, reemplazar completamente
+                        if (inputValue === '') {
+                          setDeductionRate(0);
+                        } else {
+                          const numValue = parseFloat(inputValue);
+                          if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                            setDeductionRate(numValue);
+                          }
+                        }
                       }}
-                      placeholder="1.0 (default)"
+                      onFocus={(e) => {
+                        // Al enfocar, seleccionar todo el texto para facilitar el reemplazo
+                        e.target.select();
+                      }}
+                      placeholder="0"
                       className="form-input"
                     />
-                    <small className="form-hint">Deje vacío para usar 1% (default) o ingrese 0 para sin deducción</small>
+                    <small className="form-hint">Ingrese el porcentaje de deducción (0 por defecto)</small>
                   </div>
+                </div>
+              )}
+
+              {/* Sección de Gastos de Envío (solo para EXPENSE) */}
+              {processType === ProcessType.EXPENSE && (
+                <div className="form-card">
+                  <h2 className="form-card-title">Información del Gasto</h2>
+                  <div className="form-group">
+                    <label>Categoría de Gasto</label>
+                    <select
+                      value={expenseCategory}
+                      onChange={(e) => {
+                        setExpenseCategory(e.target.value);
+                        // Limpiar campos de envío si se cambia la categoría
+                        if (e.target.value !== 'ENVIO') {
+                          setOriginLocation('');
+                          setDestinationLocation('');
+                          setRelatedMovementId(undefined);
+                        }
+                      }}
+                      className="form-input"
+                    >
+                      <option value="">Seleccione una categoría</option>
+                      <option value="ENVIO">Envío / Transporte</option>
+                      <option value="FLETE">Flete</option>
+                      <option value="TRANSPORTE">Transporte</option>
+                      <option value="OTROS">Otros</option>
+                    </select>
+                  </div>
+
+                  {expenseCategory === 'ENVIO' && (
+                    <div className="form-grid-2col">
+                      <div className="form-group">
+                        <label>Origen <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          value={originLocation}
+                          onChange={(e) => setOriginLocation(e.target.value)}
+                          placeholder="Ej: Bodega Principal"
+                          className="form-input"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Destino <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          value={destinationLocation}
+                          onChange={(e) => setDestinationLocation(e.target.value)}
+                          placeholder="Ej: Tienda Centro"
+                          className="form-input"
+                          required
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {expenseCategory === 'ENVIO' && (
+                    <div className="form-group">
+                      <label>Movimiento Relacionado (Opcional)</label>
+                      <input
+                        type="number"
+                        value={relatedMovementId !== undefined ? relatedMovementId : ''}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? undefined : parseInt(e.target.value);
+                          setRelatedMovementId(value !== undefined && !isNaN(value) ? value : undefined);
+                        }}
+                        placeholder="ID del movimiento relacionado"
+                        className="form-input"
+                      />
+                      <small className="form-hint">ID de la compra o venta relacionada con este envío</small>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1263,8 +1683,8 @@ function MovementForm({
               </div>
             )}
 
-            {/* Detalles del Movimiento (oculta para RECEIPT) */}
-            {processType !== ProcessType.RECEIPT && (
+            {/* Detalles del Movimiento (oculta para RECEIPT y EXPENSE con categoría ENVIO) */}
+            {processType !== ProcessType.RECEIPT && !(processType === ProcessType.EXPENSE && expenseCategory === 'ENVIO') && (
               <div className="form-card">
                 <div className="form-card-header">
                   <h2 className="form-card-title">Detalles del Movimiento</h2>
@@ -1296,27 +1716,39 @@ function MovementForm({
                         const discountAmount = baseAmount * ((detail.discountRate || 0) / 100);
                         const lineSubtotal = baseAmount - discountAmount;
 
+                        const isNewProduct = newProducts.has(index) && processType === ProcessType.PURCHASE;
+                        
                         return (
-                          <tr key={index} className="product-row">
-                            <td>
-                              <SearchableSelect
-                                options={
-                                  products?.map((p) => ({
-                                    value: p.reference,
-                                    label: `${p.reference} - ${p.description} (Stock: ${p.stock})`,
-                                  })) || []
-                                }
-                                value={detail.productReference}
-                                onChange={(value) => handleProductChange(index, value)}
-                                placeholder="Buscar producto..."
-                                searchPlaceholder="Escriba para buscar..."
-                                className={stockError ? 'input-error' : ''}
-                              />
-                              {selectedProduct && (
-                                <p className="product-meta">SKU: {selectedProduct.reference} | Stock: {selectedProduct.stock}</p>
-                              )}
-                              {stockError && <span className="error-message">{stockError}</span>}
-                            </td>
+                          <>
+                            <tr key={index} className="product-row">
+                              <td colSpan={isNewProduct ? 1 : undefined}>
+                                <SearchableSelect
+                                  options={
+                                    products?.map((p) => ({
+                                      value: p.reference,
+                                      label: `${p.description} - ${p.reference} (Stock: ${p.stock})`,
+                                      description: p.description.toLowerCase(),
+                                      reference: p.reference.toLowerCase(),
+                                    })) || []
+                                  }
+                                  value={detail.productReference}
+                                  onChange={(value) => handleProductChange(index, value)}
+                                  placeholder="Buscar producto..."
+                                  searchPlaceholder="Buscar por descripción o referencia..."
+                                  className={stockError ? 'input-error' : ''}
+                                  allowCustomValue={processType === ProcessType.PURCHASE}
+                                />
+                                {selectedProduct && (
+                                  <p className="product-meta">SKU: {selectedProduct.reference} | Stock: {selectedProduct.stock}</p>
+                                )}
+                                {isNewProduct && (
+                                  <div className="info-message" style={{ marginTop: '0.5rem', padding: '0.5rem', fontSize: '0.85rem', backgroundColor: 'var(--color-primary-lighter)', border: '1px solid var(--color-primary)' }}>
+                                    <span className="material-icons" style={{ fontSize: '1rem' }}>add_circle</span>
+                                    <span>Producto nuevo - se creará automáticamente al guardar la compra</span>
+                                  </div>
+                                )}
+                                {stockError && <span className="error-message">{stockError}</span>}
+                              </td>
                             <td className="text-right">
                               <input
                                 type="number"
@@ -1354,15 +1786,15 @@ function MovementForm({
                             <td className="text-right">
                               <input
                                 type="number"
-                                step="0.01"
+                                step="1"
                                 min="0"
                                 max="100"
-                                value={detail.taxRate !== undefined ? detail.taxRate : ''}
+                                value={detail.taxRate !== undefined ? detail.taxRate : 0}
                                 onChange={(e) => {
                                   const inputValue = e.target.value;
-                                  if (inputValue === '' || inputValue === null) {
-                                    // Si está vacío, usar 19 por defecto
-                                    handleDetailChange(index, 'taxRate', 19);
+                                  // Si está vacío, usar 0; si tiene valor, reemplazar completamente
+                                  if (inputValue === '') {
+                                    handleDetailChange(index, 'taxRate', 0);
                                   } else {
                                     const numValue = parseFloat(inputValue);
                                     if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
@@ -1370,15 +1802,19 @@ function MovementForm({
                                     }
                                   }
                                 }}
+                                onFocus={(e) => {
+                                  // Al enfocar, seleccionar todo el texto para facilitar el reemplazo
+                                  e.target.select();
+                                }}
                                 onBlur={(e) => {
-                                  // Al perder el foco, si está vacío poner 19
+                                  // Al perder el foco, si está vacío poner 0
                                   const inputValue = e.target.value;
                                   if (inputValue === '' || inputValue === null) {
-                                    handleDetailChange(index, 'taxRate', 19);
+                                    handleDetailChange(index, 'taxRate', 0);
                                   }
                                 }}
                                 className="form-input-xs"
-                                placeholder="19"
+                                placeholder="0"
                               />
                             </td>
                             <td className="text-right font-medium">
@@ -1397,6 +1833,57 @@ function MovementForm({
                               )}
                             </td>
                           </tr>
+                          {isNewProduct && (
+                            <tr key={`${index}-new-product`} className="product-row-new" style={{ backgroundColor: 'var(--color-primary-lighter)' }}>
+                              <td colSpan={7} style={{ padding: '1rem', borderTop: 'none' }}>
+                                <div className="form-grid-2col" style={{ gap: '1rem' }}>
+                                  <div className="form-group">
+                                    <label>Descripción del Producto <span className="required">*</span></label>
+                                    <input
+                                      type="text"
+                                      value={detail.description}
+                                      onChange={(e) => handleDetailChange(index, 'description', e.target.value)}
+                                      placeholder="Descripción completa del producto"
+                                      className="form-input"
+                                      required
+                                      maxLength={180}
+                                    />
+                                    <small className="form-hint">La referencia se generará automáticamente al escribir la descripción</small>
+                                  </div>
+                                  <div className="form-group">
+                                    <label>Referencia del Producto</label>
+                                    <input
+                                      type="text"
+                                      value={detail.productReference}
+                                      onChange={(e) => handleDetailChange(index, 'productReference', e.target.value.toUpperCase())}
+                                      placeholder="Se genera automáticamente"
+                                      className="form-input"
+                                      maxLength={30}
+                                      style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
+                                    />
+                                    <small className="form-hint">Puedes editarla manualmente si lo deseas</small>
+                                  </div>
+                                </div>
+                                <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                                  <label>Precio de Venta Inicial</label>
+                                  <input
+                                    type="number"
+                                    step="1"
+                                    min="0"
+                                    value={detail.productSalePrice || ''}
+                                    onChange={(e) => {
+                                      const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                                      handleDetailChange(index, 'productSalePrice', value);
+                                    }}
+                                    placeholder="Igual al precio de compra si no se especifica"
+                                    className="form-input"
+                                  />
+                                  <small className="form-hint">Si no se especifica, se usará el precio de compra como precio de venta inicial</small>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                          </>
                         );
                       })}
                     </tbody>
@@ -1443,12 +1930,64 @@ function MovementForm({
                       </select>
                       <input
                         type="text"
-                        value={`$ ${(payment.amount || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                        value={paymentInputValues[index] !== undefined 
+                          ? paymentInputValues[index]
+                          : payment.amount > 0 
+                            ? `$ ${payment.amount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+                            : ''}
                         onChange={(e) => {
-                          const numValue = parseFloat(e.target.value.replace(/[^0-9.-]+/g, '')) || 0;
+                          const inputValue = e.target.value;
+                          // Remover todo excepto números y punto decimal
+                          const cleanValue = inputValue.replace(/[^0-9.]/g, '');
+                          
+                          // Si está vacío, limpiar
+                          if (cleanValue === '' || cleanValue === '.') {
+                            setPaymentInputValues({ ...paymentInputValues, [index]: '' });
+                            handlePaymentChange(index, 'amount', 0);
+                            return;
+                          }
+                          
+                          // Permitir solo un punto decimal
+                          const parts = cleanValue.split('.');
+                          let numValue: number;
+                          
+                          if (parts.length > 2) {
+                            // Si hay múltiples puntos, tomar solo el primero
+                            numValue = parseFloat(parts[0] + '.' + parts.slice(1).join('')) || 0;
+                          } else if (parts.length === 2) {
+                            // Limitar decimales a 2 dígitos
+                            const decimals = parts[1].substring(0, 2);
+                            numValue = parseFloat(parts[0] + '.' + decimals) || 0;
+                          } else {
+                            numValue = parseFloat(cleanValue) || 0;
+                          }
+                          
+                          // Actualizar el valor mostrado (sin formatear mientras se escribe para facilitar edición)
+                          setPaymentInputValues({ ...paymentInputValues, [index]: cleanValue });
+                          
+                          // Actualizar el valor numérico
                           const roundedValue = Math.round(numValue * 100) / 100;
                           handlePaymentChange(index, 'amount', roundedValue);
                         }}
+                        onFocus={() => {
+                          // Al enfocar, mostrar solo el número sin formato para facilitar edición
+                          const numValue = payment.amount || 0;
+                          setPaymentInputValues({ ...paymentInputValues, [index]: numValue > 0 ? numValue.toString() : '' });
+                        }}
+                        onBlur={() => {
+                          // Al perder el foco, formatear el valor
+                          const numValue = payment.amount || 0;
+                          if (numValue > 0) {
+                            const formatted = numValue.toLocaleString('es-CO', { 
+                              minimumFractionDigits: 0, 
+                              maximumFractionDigits: 2 
+                            });
+                            setPaymentInputValues({ ...paymentInputValues, [index]: `$ ${formatted}` });
+                          } else {
+                            setPaymentInputValues({ ...paymentInputValues, [index]: '' });
+                          }
+                        }}
+                        placeholder="$ 0"
                         className="payment-amount-input"
                         required
                       />
@@ -1509,13 +2048,13 @@ function MovementForm({
                     </div>
                     {processType === ProcessType.PURCHASE && retentionTotal > 0 && (
                       <div className="total-row">
-                        <span>Retención ({retentionRate !== undefined ? retentionRate : 2.5}%)</span>
+                        <span>Retención ({retentionRate}%)</span>
                         <span className="text-red">-{formatCurrency(retentionTotal)}</span>
                       </div>
                     )}
                     {processType === ProcessType.PURCHASE && deductionTotal > 0 && (
                       <div className="total-row">
-                        <span>Deducción ({deductionRate !== undefined ? deductionRate : 1}%)</span>
+                        <span>Deducción ({deductionRate}%)</span>
                         <span className="text-red">-{formatCurrency(deductionTotal)}</span>
                       </div>
                     )}

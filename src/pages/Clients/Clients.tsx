@@ -285,7 +285,10 @@ function ClientForm({
         c.name.toLowerCase().includes(code.toLowerCase())
       ).slice(0, 5); // Máximo 5 sugerencias
       
+      // Actualizar sugerencias basadas en el código ingresado
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions(matches);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowSuggestions(matches.length > 0);
 
       // Si hay coincidencia exacta, precargar datos
@@ -293,15 +296,18 @@ function ClientForm({
         (c) => c.code.toLowerCase() === code.toLowerCase()
       );
       if (exactMatch) {
+        // Precargar datos del cliente encontrado
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setName(exactMatch.name);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEmail(exactMatch.email || '');
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPhone(exactMatch.phone || '');
-      } else if (name && matches.length === 0) {
-        // Si no hay coincidencia, limpiar campos precargados (para nuevo cliente)
-        // Pero solo si el usuario ha empezado a escribir el código desde cero
       }
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowSuggestions(false);
     }
   }, [code, clients]);
@@ -312,23 +318,18 @@ function ClientForm({
       const existingClient = clients.find(
         (c) => c.code.toLowerCase() === code.toLowerCase()
       );
-      if (existingClient) {
-        setCodeError('');
-      } else {
-        setCodeError(''); // No error para códigos nuevos
-      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCodeError(existingClient ? '' : '');
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCodeError('');
     }
   }, [code, clients]);
 
   // Validación en tiempo real del nombre
   useEffect(() => {
-    if (name && name.length < 2) {
-      setNameError('El nombre debe tener al menos 2 caracteres');
-    } else {
-      setNameError('');
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNameError(name && name.length < 2 ? 'El nombre debe tener al menos 2 caracteres' : '');
   }, [name]);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {

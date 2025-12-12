@@ -15,7 +15,7 @@
 }
 
 .page-header-content h1 {
-  font-size: 2.25rem; /* 36px - text-4xl */
+  font-size: 2rem; /* 32px - Estandarizado */
   font-weight: 900; /* font-black */
   line-height: 1.2;
   letter-spacing: -0.033em;
@@ -408,7 +408,7 @@
   }
 
   .page-header-content h1 {
-    font-size: 1.875rem;
+    font-size: 1.75rem; /* 28px - Ligeramente más pequeño para móvil */
   }
 
   .filters-row {

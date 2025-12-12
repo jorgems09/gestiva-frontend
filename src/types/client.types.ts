@@ -13,5 +13,5 @@ export interface CreateClientDto {
   phone?: string;
 }
 
-export interface UpdateClientDto extends Partial<CreateClientDto> {}
+export type UpdateClientDto = Partial<CreateClientDto>;
 

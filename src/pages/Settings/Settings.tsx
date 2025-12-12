@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../hooks/useTheme';
-import { useBusinessInfo } from '../../hooks/useBusinessInfo';
+import { useBusinessInfoContext } from '../../contexts/BusinessInfoContext';
 import { useToast } from '../../hooks/useToast';
 import './Settings.css';
 
 export default function Settings() {
   const { currentTheme, applyTheme, getAllThemes } = useTheme();
-  const { businessInfo, updateBusinessInfo } = useBusinessInfo();
+  const { businessInfo, updateBusinessInfo } = useBusinessInfoContext();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState('appearance');
   const [businessForm, setBusinessForm] = useState(businessInfo);
@@ -29,6 +29,8 @@ export default function Settings() {
   // Sincronizar formulario cuando cambie la pestaña o los datos del negocio
   useEffect(() => {
     if (activeTab === 'business') {
+      // Sincronizar formulario con datos del contexto cuando se activa la pestaña
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBusinessForm(businessInfo);
     }
   }, [activeTab, businessInfo]);
@@ -214,6 +216,40 @@ export default function Settings() {
                     placeholder="Ej: www.tienda.com"
                     className="form-input"
                   />
+                </div>
+
+                <div className="settings-divider"></div>
+                <h3 className="settings-subsection-title">Personalización del Sidebar</h3>
+                <p className="settings-subsection-description">Configura cómo aparece tu negocio en el menú lateral</p>
+
+                <div className="form-group">
+                  <label htmlFor="sidebar-name">Nombre en el Sidebar (Opcional)</label>
+                  <textarea
+                    id="sidebar-name"
+                    value={businessForm.sidebarName || ''}
+                    onChange={(e) => handleBusinessInfoChange('sidebarName', e.target.value)}
+                    placeholder="Ej: Mi Tienda
+Puedes usar Enter para saltos de línea"
+                    className="form-input"
+                    rows={3}
+                    style={{ resize: 'vertical', minHeight: '60px' }}
+                  />
+                  <small className="form-hint">Si no especificas, se usará el nombre del negocio. Puedes usar Enter para crear saltos de línea.</small>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="sidebar-logo">Ruta del Logo del Sidebar (Opcional)</label>
+                  <input
+                    id="sidebar-logo"
+                    type="text"
+                    value={businessForm.sidebarLogo || ''}
+                    onChange={(e) => handleBusinessInfoChange('sidebarLogo', e.target.value)}
+                    placeholder="Ej: /logo-empresa.svg"
+                    className="form-input"
+                  />
+                  <small className="form-hint">
+                    Coloca tu logo en la carpeta /public y especifica la ruta (ej: /logo-empresa.svg, /logo-empresa.png)
+                  </small>
                 </div>
 
                 <div className="form-actions">

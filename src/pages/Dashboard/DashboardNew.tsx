@@ -8,6 +8,7 @@ import Loading from '../../components/common/Loading';
 import StatusBadge from '../../components/common/StatusBadge';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { ProcessType } from '../../constants/process-types';
+import type { AccountReceivable, PaymentDetail, MovementHeader, AccountPayable } from '../../types/movement.types';
 import './DashboardNew.css';
 
 type TimePeriod = '7days' | '30days';
@@ -79,11 +80,11 @@ export default function DashboardNew() {
     
     // Verificar si tiene cuentas por cobrar pendientes
     if (m.receivables && m.receivables.length > 0) {
-      return m.receivables.some((r: any) => r.status === 'PENDIENTE' && Number(r.balance) > 0);
+      return m.receivables.some((r: AccountReceivable) => r.status === 'PENDIENTE' && Number(r.balance) > 0);
     }
     
     // Si no tiene receivables, verificar pagos
-    const paymentsTotal = m.payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
+    const paymentsTotal = m.payments?.reduce((sum: number, p: PaymentDetail) => sum + Number(p.amount), 0) || 0;
     return Number(m.total) > paymentsTotal;
   }).length || 0;
 
@@ -146,14 +147,14 @@ export default function DashboardNew() {
     .slice(0, 4);
 
   // Función para obtener el status del movimiento (considerando receivables y payables)
-  const getPaymentStatus = (movement: any): 'paid' | 'pending' | 'overdue' | 'cancelled' => {
+  const getPaymentStatus = (movement: MovementHeader): 'paid' | 'pending' | 'overdue' | 'cancelled' => {
     if (movement.status === 0 || movement.consecutive?.startsWith('ANL-')) {
       return 'cancelled';
     }
     
     // Para VENTAS: Verificar el estado de las cuentas por cobrar
     if (movement.processType === ProcessType.SALE && movement.receivables && movement.receivables.length > 0) {
-      const hasActiveReceivables = movement.receivables.some((r: any) => 
+      const hasActiveReceivables = movement.receivables.some((r: AccountReceivable) => 
         r.status === 'PENDIENTE' && Number(r.balance) > 0
       );
       
@@ -166,7 +167,7 @@ export default function DashboardNew() {
     
     // Para COMPRAS: Verificar el estado de las cuentas por pagar
     if (movement.processType === ProcessType.PURCHASE && movement.payables && movement.payables.length > 0) {
-      const hasActivePayables = movement.payables.some((p: any) => 
+      const hasActivePayables = movement.payables.some((p: AccountPayable) => 
         p.status === 'PENDIENTE' && Number(p.balance) > 0
       );
       
@@ -178,7 +179,7 @@ export default function DashboardNew() {
     }
     
     // Para otros tipos: usar la lógica de pagos directos
-    const paymentsTotal = movement.payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
+    const paymentsTotal = movement.payments?.reduce((sum: number, p: PaymentDetail) => sum + Number(p.amount), 0) || 0;
     const movementTotal = Number(movement.total);
     
     if (paymentsTotal >= movementTotal) {
@@ -189,7 +190,7 @@ export default function DashboardNew() {
   };
 
   // Convertir status a badge
-  const getMovementStatusBadge = (movement: any) => {
+  const getMovementStatusBadge = (movement: MovementHeader) => {
     const status = getPaymentStatus(movement);
     
     switch (status) {

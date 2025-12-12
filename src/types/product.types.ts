@@ -15,5 +15,5 @@ export interface CreateProductDto {
   stock?: number;
 }
 
-export interface UpdateProductDto extends Partial<CreateProductDto> {}
+export type UpdateProductDto = Partial<CreateProductDto>;
 

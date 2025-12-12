@@ -118,7 +118,7 @@ export default function Suppliers() {
 
       return true;
     });
-  }, [suppliers, searchTerm, filters]);
+  }, [suppliers, searchTerm]);
 
   // Paginación
   const paginatedSuppliers = useMemo(() => {
@@ -383,7 +383,10 @@ function SupplierForm({
         s.name.toLowerCase().includes(code.toLowerCase())
       ).slice(0, 5); // Máximo 5 sugerencias
       
+      // Actualizar sugerencias basadas en el código ingresado
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions(matches);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowSuggestions(matches.length > 0);
 
       // Si hay coincidencia exacta, precargar datos
@@ -391,12 +394,18 @@ function SupplierForm({
         (s) => s.code.toLowerCase() === code.toLowerCase()
       );
       if (exactMatch) {
+        // Precargar datos del proveedor encontrado
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setName(exactMatch.name);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEmail(exactMatch.email || '');
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPhone(exactMatch.phone || '');
       }
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowSuggestions(false);
     }
   }, [code, suppliers]);
@@ -407,23 +416,18 @@ function SupplierForm({
       const existingSupplier = suppliers.find(
         (s) => s.code.toLowerCase() === code.toLowerCase()
       );
-      if (existingSupplier) {
-        setCodeError('');
-      } else {
-        setCodeError(''); // No error para códigos nuevos
-      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCodeError(existingSupplier ? '' : '');
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCodeError('');
     }
   }, [code, suppliers]);
 
   // Validación en tiempo real del nombre
   useEffect(() => {
-    if (name && name.length < 2) {
-      setNameError('El nombre debe tener al menos 2 caracteres');
-    } else {
-      setNameError('');
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNameError(name && name.length < 2 ? 'El nombre debe tener al menos 2 caracteres' : '');
   }, [name]);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,4 +1,4 @@
-Ideas de Diseño UI/UX para un ERP de Tienda de Ropa Femenina
+Ideas de Diseño UI/UX para Gestiva - Tienda de Ropa Femenina
 
 Este documento presenta una propuesta de diseño para la interfaz de usuario (UI) de un Gestiva, optimizado para ser completamente funcional y estético tanto en escritorio (Desktop) como en dispositivos móviles (Mobile-First).
 
@@ -46,7 +46,7 @@ Barra de Acceso Rápido (Bottom Navigation): En la parte inferior, mostrar los 3
 
 3. Estructura de Módulos (Vistas)
 
-El ERP debe cubrir las siguientes áreas clave:
+Gestiva debe cubrir las siguientes áreas clave:
 
 Módulo
 

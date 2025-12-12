@@ -19,6 +19,7 @@ export default function Reports() {
     | 'payables-consolidated'
     | 'kardex'
     | 'valued-inventory'
+    | 'shipping-expenses'
   >('daily');
   const [selectedClientCode, setSelectedClientCode] = useState('');
   const [selectedSupplierCode, setSelectedSupplierCode] = useState('');
@@ -31,6 +32,8 @@ export default function Reports() {
   )
     .toISOString()
     .split('T')[0];
+  const [shippingDateFrom, setShippingDateFrom] = useState(firstDayOfMonth);
+  const [shippingDateTo, setShippingDateTo] = useState(today);
 
   const { data: dailyReport, isLoading: dailyLoading } = useQuery({
     queryKey: ['daily-report', today],
@@ -96,6 +99,12 @@ export default function Reports() {
     enabled: reportType === 'payables' && !!selectedSupplierCode,
   });
 
+  const { data: shippingExpenses, isLoading: shippingExpensesLoading, error: shippingExpensesError } = useQuery({
+    queryKey: ['shipping-expenses', shippingDateFrom, shippingDateTo],
+    queryFn: () => reportsApi.shippingExpenses(shippingDateFrom, shippingDateTo).then((res) => res.data),
+    enabled: reportType === 'shipping-expenses',
+  });
+
   const isLoading =
     dailyLoading ||
     profitLoading ||
@@ -104,7 +113,8 @@ export default function Reports() {
     receivablesConsolidatedLoading ||
     payablesConsolidatedLoading ||
     kardexLoading ||
-    valuedInventoryLoading;
+    valuedInventoryLoading ||
+    shippingExpensesLoading;
 
   return (
     <div className="reports-page">
@@ -158,6 +168,12 @@ export default function Reports() {
             onClick={() => setReportType('valued-inventory')}
           >
             Inventario Valorizado
+          </button>
+          <button
+            className={reportType === 'shipping-expenses' ? 'active' : ''}
+            onClick={() => setReportType('shipping-expenses')}
+          >
+            Gastos por Envío
           </button>
         </div>
       </div>
@@ -821,6 +837,254 @@ export default function Reports() {
                 </table>
               ) : (
                 <p className="no-data">No hay productos con stock</p>
+              )}
+            </div>
+          )}
+
+          {reportType === 'shipping-expenses' && (
+            <div className="report-card">
+              <div className="report-header-with-filters">
+                <h2>Gastos por Envío</h2>
+                <div className="date-range-filters">
+                  <div className="filter-group">
+                    <label>Desde:</label>
+                    <input
+                      type="date"
+                      value={shippingDateFrom}
+                      onChange={(e) => setShippingDateFrom(e.target.value)}
+                      className="form-input-sm"
+                    />
+                  </div>
+                  <div className="filter-group">
+                    <label>Hasta:</label>
+                    <input
+                      type="date"
+                      value={shippingDateTo}
+                      onChange={(e) => setShippingDateTo(e.target.value)}
+                      className="form-input-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {shippingExpensesLoading ? (
+                <div className="no-data">
+                  <p>Cargando datos del reporte...</p>
+                </div>
+              ) : shippingExpensesError ? (
+                <div className="no-data">
+                  <p style={{ color: 'var(--color-error)' }}>
+                    Error al cargar el reporte: {shippingExpensesError instanceof Error ? shippingExpensesError.message : 'Error desconocido'}
+                  </p>
+                </div>
+              ) : shippingExpenses ? (
+                <>
+                  {/* Resumen Ejecutivo */}
+                  <div className="shipping-summary">
+                    <div className="summary-grid">
+                      <div className="summary-item">
+                        <span>Total Gastos:</span>
+                        <strong>{formatCurrency(shippingExpenses.summary.totalExpenses)}</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>Total Envíos:</span>
+                        <strong>{shippingExpenses.summary.totalShipments}</strong>
+                      </div>
+                      <div className="summary-item highlight">
+                        <span>Promedio por Envío:</span>
+                        <strong>{formatCurrency(shippingExpenses.summary.averagePerShipment)}</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>Rutas Únicas:</span>
+                        <strong>{shippingExpenses.routes.total}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {shippingExpenses.summary.totalShipments === 0 ? (
+                    <div className="no-data">
+                      <p>No se encontraron gastos de envío para el período seleccionado.</p>
+                      <p style={{ marginTop: 'var(--spacing-sm)', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+                        Para generar datos, crea movimientos de tipo "Egreso" con categoría "Envío/Transporte" en el módulo de Movimientos.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+
+              {/* Top Rutas por Costo */}
+              {shippingExpenses.routes.topByCost.length > 0 && (
+                <div className="report-section">
+                  <h3>Top 10 Rutas Más Costosas</h3>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Ruta</th>
+                        <th>Cantidad</th>
+                        <th>Total</th>
+                        <th>Promedio</th>
+                        <th>% del Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shippingExpenses.routes.topByCost.map((route, index) => (
+                        <tr key={index}>
+                          <td>
+                            <strong>{route.origin}</strong> → {route.destination}
+                          </td>
+                          <td>{route.count}</td>
+                          <td>{formatCurrency(route.totalExpenses)}</td>
+                          <td>{formatCurrency(route.average)}</td>
+                          <td>{route.percentage.toFixed(2)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Análisis Mensual */}
+              {shippingExpenses.monthly.items.length > 0 && (
+                <div className="report-section">
+                  <h3>
+                    Análisis Mensual
+                    {shippingExpenses.monthly.trend.direction === 'up' && (
+                      <span className="trend-badge trend-up">
+                        ↑ {shippingExpenses.monthly.trend.percentage.toFixed(1)}%
+                      </span>
+                    )}
+                    {shippingExpenses.monthly.trend.direction === 'down' && (
+                      <span className="trend-badge trend-down">
+                        ↓ {shippingExpenses.monthly.trend.percentage.toFixed(1)}%
+                      </span>
+                    )}
+                    {shippingExpenses.monthly.trend.direction === 'stable' && (
+                      <span className="trend-badge trend-stable">→ Estable</span>
+                    )}
+                  </h3>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Mes</th>
+                        <th>Cantidad</th>
+                        <th>Total</th>
+                        <th>Promedio</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shippingExpenses.monthly.items.map((month, index) => (
+                        <tr key={index}>
+                          <td>{month.month}</td>
+                          <td>{month.count}</td>
+                          <td>{formatCurrency(month.totalExpenses)}</td>
+                          <td>{formatCurrency(month.average)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Métodos de Pago */}
+              {shippingExpenses.paymentMethods.items.length > 0 && (
+                <div className="report-section">
+                  <h3>Métodos de Pago</h3>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Método</th>
+                        <th>Cantidad</th>
+                        <th>Total</th>
+                        <th>% del Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shippingExpenses.paymentMethods.items.map((method, index) => (
+                        <tr key={index}>
+                          <td>{method.method}</td>
+                          <td>{method.count}</td>
+                          <td>{formatCurrency(method.total)}</td>
+                          <td>{method.percentage.toFixed(2)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Todas las Rutas */}
+              {shippingExpenses.routes.items.length > 0 && (
+                <div className="report-section">
+                  <h3>Todas las Rutas ({shippingExpenses.routes.items.length})</h3>
+                  <div className="table-container">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Origen</th>
+                          <th>Destino</th>
+                          <th>Cantidad</th>
+                          <th>Total</th>
+                          <th>Promedio</th>
+                          <th>% del Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {shippingExpenses.routes.items.map((route, index) => (
+                          <tr key={index}>
+                            <td>{route.origin}</td>
+                            <td>{route.destination}</td>
+                            <td>{route.count}</td>
+                            <td>{formatCurrency(route.totalExpenses)}</td>
+                            <td>{formatCurrency(route.average)}</td>
+                            <td>{route.percentage.toFixed(2)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Detalle de Movimientos */}
+              {shippingExpenses.movements.length > 0 && (
+                <div className="report-section">
+                  <h3>Detalle de Envíos ({shippingExpenses.movements.length})</h3>
+                  <div className="table-container">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Consecutivo</th>
+                          <th>Fecha</th>
+                          <th>Origen</th>
+                          <th>Destino</th>
+                          <th>Monto</th>
+                          <th>Método Pago</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {shippingExpenses.movements.map((movement) => (
+                          <tr key={movement.id}>
+                            <td>
+                              <strong>{movement.consecutive}</strong>
+                            </td>
+                            <td>{formatDate(movement.date)}</td>
+                            <td>{movement.origin}</td>
+                            <td>{movement.destination}</td>
+                            <td>{formatCurrency(movement.amount)}</td>
+                            <td>{movement.paymentMethod}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="no-data">
+                  <p>No se pudieron cargar los datos del reporte.</p>
+                </div>
               )}
             </div>
           )}

@@ -1,7 +1,9 @@
 import { useState, useEffect, type ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Drawer from '../common/Drawer';
 import { brandingConfig } from '../../config/branding';
+import { useBusinessInfoContext } from '../../contexts/BusinessInfoContext';
+import { useAuth } from '../../contexts/AuthContext';
 import './Layout.css';
 
 interface LayoutProps {
@@ -29,17 +31,26 @@ interface SidebarContentProps {
   isMobile: boolean;
   setDrawerOpen: (open: boolean) => void;
   location: { pathname: string };
+  onLogout: () => void;
 }
 
-const SidebarContent = ({ isActive, isMobile, setDrawerOpen, location }: SidebarContentProps) => (
+const SidebarContent = ({ isActive, isMobile, setDrawerOpen, location, onLogout }: SidebarContentProps) => {
+  const { businessInfo } = useBusinessInfoContext();
+  
+  // Usar configuración personalizada del negocio o fallback a brandingConfig
+  const sidebarName = businessInfo?.sidebarName || businessInfo?.name || brandingConfig.companyName || 'Tu Empresa';
+  const sidebarLogo = businessInfo?.sidebarLogo || brandingConfig.logoPath || '/logo-empresa.svg';
+  const appName = brandingConfig.appSubtitle || brandingConfig.appName || 'Gestiva';
+  
+  return (
     <>
       <div className="sidebar-header">
         <div className="sidebar-branding">
           {/* Logo de la empresa - espacio reservado */}
           <div className="company-logo-container">
             <img 
-              src={brandingConfig.logoPath} 
-              alt={brandingConfig.logoAlt} 
+              src={sidebarLogo} 
+              alt={`Logo de ${sidebarName}`} 
               className="company-logo"
               onError={(e) => {
                 // Si no existe el logo, mostrar un placeholder elegante
@@ -53,10 +64,10 @@ const SidebarContent = ({ isActive, isMobile, setDrawerOpen, location }: Sidebar
           </div>
           {/* Nombre de la empresa y aplicación */}
           <div className="app-name-container">
-            {brandingConfig.companyName && (
-              <h2 className="company-name">{brandingConfig.companyName}</h2>
+            {sidebarName && (
+              <h2 className="company-name">{sidebarName}</h2>
             )}
-            <p className="app-name">{brandingConfig.appSubtitle || brandingConfig.appName}</p>
+            <p className="app-name">{appName}</p>
           </div>
         </div>
       </div>
@@ -90,7 +101,7 @@ const SidebarContent = ({ isActive, isMobile, setDrawerOpen, location }: Sidebar
           </button>
         </div>
       )}
-      {/* Links de Configuración y Ayuda */}
+      {/* Links de Configuración, Ayuda y Logout */}
       <div className="sidebar-footer">
         <Link
           to="/settings"
@@ -108,14 +119,33 @@ const SidebarContent = ({ isActive, isMobile, setDrawerOpen, location }: Sidebar
           <span className="material-icons menu-icon">help</span>
           <span className="menu-label">Ayuda</span>
         </Link>
+        <button
+          className="sidebar-footer-link logout-button"
+          onClick={() => {
+            onLogout();
+            if (isMobile) setDrawerOpen(false);
+          }}
+        >
+          <span className="material-icons menu-icon">logout</span>
+          <span className="menu-label">Cerrar Sesión</span>
+        </button>
       </div>
     </>
-);
+  );
+};
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { businessInfo } = useBusinessInfoContext();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -133,6 +163,11 @@ export default function Layout({ children }: LayoutProps) {
   const isActive = (path: string) => location.pathname === path;
 
   const mobileMenuItems = menuItems.filter((item) => item.mobilePriority);
+  
+  // Usar configuración personalizada del negocio o fallback a brandingConfig
+  const sidebarName = businessInfo?.sidebarName || businessInfo?.name || brandingConfig.companyName || 'Tu Empresa';
+  const sidebarLogo = businessInfo?.sidebarLogo || brandingConfig.logoPath || '/logo-empresa.svg';
+  const appName = brandingConfig.appSubtitle || brandingConfig.appName || 'Gestiva';
 
   return (
     <div className="layout">
@@ -144,6 +179,7 @@ export default function Layout({ children }: LayoutProps) {
             isMobile={isMobile}
             setDrawerOpen={setDrawerOpen}
             location={location}
+            onLogout={handleLogout}
           />
         </nav>
       )}
@@ -165,8 +201,8 @@ export default function Layout({ children }: LayoutProps) {
               <div className="drawer-branding">
                 <div className="company-logo-container mobile">
                   <img 
-                    src={brandingConfig.logoPath} 
-                    alt={brandingConfig.logoAlt} 
+                    src={sidebarLogo} 
+                    alt={`Logo de ${sidebarName}`} 
                     className="company-logo"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
@@ -178,13 +214,10 @@ export default function Layout({ children }: LayoutProps) {
                   </div>
                 </div>
                 <div className="app-name-container mobile">
-                  {brandingConfig.companyName && (
-                    <div className="company-name-small">{brandingConfig.companyName}</div>
+                  {sidebarName && (
+                    <div className="company-name-small">{sidebarName}</div>
                   )}
-                  <h2 className="app-name">{brandingConfig.appName}</h2>
-                  {brandingConfig.appSubtitle && (
-                    <span className="app-subtitle">{brandingConfig.appSubtitle}</span>
-                  )}
+                  <h2 className="app-name">{appName}</h2>
                 </div>
               </div>
             }

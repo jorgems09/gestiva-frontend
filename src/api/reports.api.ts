@@ -9,6 +9,7 @@ import type {
   PayablesConsolidated,
   ProductKardex,
   ValuedInventory,
+  ShippingExpensesReport,
 } from '../types/report.types';
 
 // Transforma los valores DECIMAL de MySQL (strings) a números
@@ -312,5 +313,9 @@ export const reportsApi = {
       data: transformValuedInventory(response.data),
     };
   },
+  shippingExpenses: (from?: string, to?: string) =>
+    apiClient.get<ShippingExpensesReport>('/reports/shipping-expenses', {
+      params: from && to ? { from, to } : {},
+    }),
 };
 

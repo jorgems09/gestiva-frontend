@@ -320,6 +320,31 @@
   color: var(--color-text-lighter);
 }
 
+.form-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-lighter);
+  margin-top: var(--spacing-xs);
+}
+
+.settings-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--spacing-xl) 0;
+}
+
+.settings-subsection-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-xs);
+}
+
+.settings-subsection-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-lighter);
+  margin-bottom: var(--spacing-lg);
+}
+
 .form-actions {
   display: flex;
   gap: var(--spacing-md);

@@ -18,7 +18,7 @@
 
 .dashboard-header h1 {
   font-size: 2rem;
-  font-weight: var(--font-weight-bold);
+  font-weight: 900; /* Estandarizado - font-black */
   color: var(--color-text);
   margin: 0;
   line-height: 1.2;

@@ -55,13 +55,13 @@ export interface DailyReport {
     process: string;
     total: number;
   }>;
-  documents: any[];
+  documents: unknown[];
 }
 
 export interface PrintableReport {
-  header: any;
-  details: any[];
-  payments: any[];
+  header: Record<string, unknown>;
+  details: Array<Record<string, unknown>>;
+  payments: Array<Record<string, unknown>>;
   totals: {
     subtotal: number;
     tax: number;
@@ -190,5 +190,77 @@ export interface ValuedInventory {
     totalValueAtSale: number;
     totalPotentialMargin: number;
   };
+}
+
+export interface ShippingExpensesReport {
+  summary: {
+    totalExpenses: number;
+    totalShipments: number;
+    averagePerShipment: number;
+    period: {
+      from: string | null;
+      to: string | null;
+    };
+  };
+  routes: {
+    total: number;
+    items: Array<{
+      origin: string;
+      destination: string;
+      totalExpenses: number;
+      count: number;
+      average: number;
+      percentage: number;
+      movements: Array<Record<string, unknown>>;
+    }>;
+    topByCost: Array<{
+      origin: string;
+      destination: string;
+      totalExpenses: number;
+      count: number;
+      average: number;
+      percentage: number;
+    }>;
+    topByFrequency: Array<{
+      origin: string;
+      destination: string;
+      totalExpenses: number;
+      count: number;
+      average: number;
+      percentage: number;
+    }>;
+  };
+  monthly: {
+    items: Array<{
+      month: string;
+      totalExpenses: number;
+      count: number;
+      average: number;
+    }>;
+    trend: {
+      direction: 'up' | 'down' | 'stable';
+      percentage: number;
+    };
+  };
+  paymentMethods: {
+    total: number;
+    items: Array<{
+      method: string;
+      total: number;
+      count: number;
+      percentage: number;
+    }>;
+  };
+  movements: Array<{
+    id: number;
+    consecutive: string;
+    date: string;
+    origin: string;
+    destination: string;
+    amount: number;
+    paymentMethod: string;
+    relatedMovementId?: number;
+    notes?: string;
+  }>;
 }
 

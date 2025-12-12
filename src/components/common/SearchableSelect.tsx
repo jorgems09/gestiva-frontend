@@ -5,7 +5,9 @@ import './SearchableSelect.css';
 interface Option {
   value: string;
   label: string;
-  [key: string]: any;
+  description?: string;
+  reference?: string;
+  [key: string]: unknown;
 }
 
 interface SearchableSelectProps {
@@ -20,6 +22,7 @@ interface SearchableSelectProps {
   disabled?: boolean;
   required?: boolean;
   renderOption?: (option: Option) => React.ReactNode;
+  allowCustomValue?: boolean; // Permite ingresar valores que no están en la lista
 }
 
 export default function SearchableSelect({
@@ -34,6 +37,7 @@ export default function SearchableSelect({
   disabled = false,
   required = false,
   renderOption,
+  allowCustomValue = false,
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,9 +48,16 @@ export default function SearchableSelect({
 
   const selectedOption = options.find((opt) => opt.value === value);
 
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOptions = options.filter((option) => {
+    const searchLower = searchTerm.toLowerCase();
+    // Buscar en label (siempre)
+    const matchesLabel = option.label.toLowerCase().includes(searchLower);
+    // Buscar en description si existe
+    const matchesDescription = option.description?.toLowerCase().includes(searchLower) ?? false;
+    // Buscar en reference si existe
+    const matchesReference = option.reference?.toLowerCase().includes(searchLower) ?? false;
+    return matchesLabel || matchesDescription || matchesReference;
+  });
 
   // Calcular y actualizar la posición del dropdown
   const updateDropdownPosition = () => {
@@ -82,6 +93,8 @@ export default function SearchableSelect({
         window.removeEventListener('resize', handleResize);
       };
     }
+    // updateDropdownPosition está definido dentro del componente y se actualiza en cada render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   useEffect(() => {
@@ -124,6 +137,14 @@ export default function SearchableSelect({
           placeholder={searchPlaceholder}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={(e) => {
+            if (allowCustomValue && e.key === 'Enter' && searchTerm && !filteredOptions.find(opt => opt.value === searchTerm)) {
+              e.preventDefault();
+              onChange(searchTerm);
+              setIsOpen(false);
+              setSearchTerm('');
+            }
+          }}
           className="searchable-select-input"
         />
       </div>
@@ -143,7 +164,21 @@ export default function SearchableSelect({
           ))
         ) : (
           <div className="searchable-select-empty">
-            No se encontraron resultados
+            {allowCustomValue && searchTerm ? (
+              <div
+                className="searchable-select-option"
+                onClick={() => {
+                  onChange(searchTerm);
+                  setIsOpen(false);
+                  setSearchTerm('');
+                }}
+                style={{ fontStyle: 'italic', color: 'var(--color-primary)' }}
+              >
+                Usar "{searchTerm}" como valor personalizado
+              </div>
+            ) : (
+              'No se encontraron resultados'
+            )}
           </div>
         )}
 

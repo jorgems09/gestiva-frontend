@@ -1,6 +1,6 @@
 Principios de Diseño UX para la Eficiencia Transaccional
 
-El diseño de la interfaz de usuario (UI) para módulos transaccionales en el ERP se ha optimizado para la velocidad y la reducción de errores, asumiendo que el usuario está registrando datos en un entorno de alta demanda (punto de venta o bodega).
+El diseño de la interfaz de usuario (UI) para módulos transaccionales en Gestiva se ha optimizado para la velocidad y la reducción de errores, asumiendo que el usuario está registrando datos en un entorno de alta demanda (punto de venta o bodega).
 
 1. Módulo de Registro de Cliente: Priorizando la Velocidad
 

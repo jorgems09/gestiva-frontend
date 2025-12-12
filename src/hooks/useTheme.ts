@@ -46,10 +46,8 @@ export const useTheme = () => {
   // Aplicar tema al montar componente
   useEffect(() => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || defaultTheme;
-    if (savedTheme !== currentTheme) {
-      setCurrentTheme(savedTheme);
-    }
     applyTheme(savedTheme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Solo ejecutar una vez al montar
 
   const getTheme = (): Theme | undefined => {

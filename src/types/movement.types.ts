@@ -9,6 +9,7 @@ export interface MovementDetail {
   discountRate?: number;
   taxRate?: number;
   weight?: number;
+  productSalePrice?: number; // Precio de venta inicial del producto (solo si se crea nuevo)
 }
 
 export interface PaymentDetail {
@@ -27,6 +28,9 @@ export interface CreateMovementDto {
   processType?: ProcessType;
   documentDate: string;
   clientCode?: string;
+  clientName?: string; // Nombre del cliente (requerido si se crea cliente nuevo)
+  clientEmail?: string; // Email del cliente (opcional)
+  clientPhone?: string; // Teléfono del cliente (opcional)
   supplierCode?: string;
   supplierName?: string; // Mantener por compatibilidad
   notes?: string;
@@ -37,6 +41,10 @@ export interface CreateMovementDto {
   freightCost?: number;
   retentionRate?: number; // Porcentaje de retención (ej: 2.5). Si no se especifica, usa default. Si es 0, no aplica retención.
   deductionRate?: number; // Porcentaje de deducción (ej: 1). Si no se especifica, usa default. Si es 0, no aplica deducción.
+  expenseCategory?: string; // 'ENVIO', 'TRANSPORTE', 'FLETE', 'OTROS', etc.
+  originLocation?: string; // Origen del envío/traslado
+  destinationLocation?: string; // Destino del envío/traslado
+  relatedMovementId?: number; // ID del movimiento relacionado (compra/venta)
   details: MovementDetail[];
   payments: PaymentDetail[];
   receivablesToSettle?: RelatedAccountDto[];
@@ -59,6 +67,10 @@ export interface MovementHeader {
   grossWeight?: number;
   netWeight?: number;
   freightCost?: number;
+  expenseCategory?: string; // 'ENVIO', 'TRANSPORTE', 'FLETE', 'OTROS', etc.
+  originLocation?: string; // Origen del envío/traslado
+  destinationLocation?: string; // Destino del envío/traslado
+  relatedMovementId?: number; // ID del movimiento relacionado (compra/venta)
   supplierName?: string; // Mantener por compatibilidad
   supplier?: Supplier; // Nueva relación
   referenceDocuments?: string[];
